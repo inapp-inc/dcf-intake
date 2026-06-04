@@ -1,0 +1,1365 @@
+openapi: 3.1.0
+info:
+  title: DCF Automated Intake Tool API
+  description: |
+    Demo platform API for Massachusetts DCF AIT.
+    Contract-first design — see Docs/DCF-AIT-PLATFORM-ARCHITECTURE.md and openspec/specs/ (8 domains).
+  version: 1.0.0
+  contact:
+    name: InApp HHS Practice
+
+servers:
+  - url: https://localhost/api/v1
+    description: Local Docker (via nginx TLS)
+  - url: http://localhost:8080/api/v1
+    description: Direct API (development)
+
+tags:
+  - name: Auth
+  - name: Cases
+  - name: Intake
+  - name: Form51A
+  - name: Screening
+  - name: Investigation
+  - name: Audit
+  - name: Admin
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Admin]
+      summary: API health check
+      security: []
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/demo-login:
+    post:
+      tags: [Auth]
+      summary: Demo role login (mockup role picker)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoLoginRequest'
+      responses:
+        '200':
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /cases:
+    get:
+      tags: [Cases]
+      summary: List cases for current role
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [in_progress, pending_review, assigned, closed]
+        - name: emergency
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CaseSummary'
+    post:
+      tags: [Cases]
+      summary: Create new 51A case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+
+  /cases/{caseId}:
+    get:
+      tags: [Cases]
+      summary: Get case detail (RBAC applies; admin receives redacted)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Cases]
+      summary: Update case metadata or 51A fields
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCaseRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+
+  /cases/{caseId}/audio:
+    post:
+      tags: [Intake]
+      summary: Upload call recording (multipart)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Upload accepted; pipeline started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineStatus'
+
+  /cases/{caseId}/transcript:
+    get:
+      tags: [Intake]
+      summary: Get speaker-attributed transcript
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcript'
+
+  /cases/{caseId}/form51a:
+    get:
+      tags: [Form51A]
+      summary: Get full 51A form (four sections) and checkpoint status
+      description: |
+        Primary artifact for screener 51A filling. Aligns with mockup FORM_FIELDS sections.
+        See openspec/specs/form-51a/spec.md and codebase/api/schemas/51a-form.schema.json.
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51A'
+    patch:
+      tags: [Form51A]
+      summary: Update one or more 51A fields (human edit)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Form51AFieldUpdates'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51A'
+
+  /cases/{caseId}/form51a/confirm-section:
+    post:
+      tags: [Form51A]
+      summary: Confirm all AI fields in a section (human attestation)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sectionId]
+              properties:
+                sectionId:
+                  type: string
+                  enum: [child, incident, reporter, household]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51A'
+
+  /cases/{caseId}/form51a/official:
+    get:
+      tags: [Form51A]
+      summary: Official DCF 51A HTML form (filled, for print/PDF in new tab)
+      description: |
+        Returns `text/html` — Massachusetts DCF 51A Report Form template with fields
+        populated via fill51A() from Form51A working copy. See dcf/51A-Report-Form.html and
+        Docs/51A-OFFICIAL-FORM.md. Adds DRAFT banner when checkpoint is not complete.
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          description: Fillable official 51A HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cases/{caseId}/form51a/official/field-map:
+    get:
+      tags: [Form51A]
+      summary: Resolved official HTML field values (JSON, for debugging or client-side render)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Official51AFieldMap'
+
+  /cases/{caseId}/form51a/complete-checkpoint:
+    post:
+      tags: [Form51A]
+      summary: Complete the 51A form checkpoint (mandatory before supervisor submit)
+      description: |
+        Validates mandatory fields and AI field confirmation. On success sets checkpointStatus=complete
+        and may trigger background check orchestration.
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          description: Checkpoint completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51ACheckpointResult'
+        '400':
+          description: Validation failed (missing fields or unconfirmed AI values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51AValidationError'
+
+  /cases/{caseId}/risk:
+    get:
+      tags: [Intake]
+      summary: Get risk score and contributing factors
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessment'
+
+  /cases/{caseId}/risk/recompute:
+    post:
+      tags: [Intake]
+      summary: Recalculate statistical risk from current transcript and triage (demo)
+      description: |
+        Synchronous rule-based rescoring. Persists a new risk_assessments row.
+        Does not rerun the full AI pipeline.
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          description: Risk updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  score:
+                    type: integer
+                  label:
+                    type: string
+                  message:
+                    type: string
+        '400':
+          description: No transcript
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cases/{caseId}/risk/override:
+    post:
+      tags: [Intake]
+      summary: Screener override of risk score (audit logged)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+      responses:
+        '200':
+          description: Override recorded
+
+  /cases/{caseId}/triage-flags:
+    get:
+      tags: [Intake]
+      summary: List AI triage flags
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TriageFlag'
+
+  /cases/{caseId}/triage-decisions:
+    post:
+      tags: [Intake]
+      summary: Confirm or dismiss a triage flag
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageDecisionRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageFlag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /cases/{caseId}/background-checks:
+    get:
+      tags: [Intake]
+      summary: Parallel background check status
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackgroundCheckStatus'
+
+  /cases/{caseId}/submit:
+    post:
+      tags: [Intake]
+      summary: Screener submit to supervisor (requires 51A form checkpoint complete)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+        '409':
+          description: 51A form checkpoint not complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form51AValidationError'
+
+  /cases/{caseId}/assistant-messages:
+    get:
+      tags: [Intake]
+      summary: AI assistant message history
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssistantMessage'
+
+  /screening/pending:
+    get:
+      tags: [Screening]
+      summary: Supervisor pending review queue
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScreeningQueueItem'
+
+  /screening/{caseId}/decision:
+    post:
+      tags: [Screening]
+      summary: Record screening decision
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScreeningDecisionRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseDetail'
+
+  /cases/{caseId}/briefing:
+    get:
+      tags: [Investigation]
+      summary: 51B pre-visit briefing
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Briefing'
+
+  /cases/{caseId}/briefing/opened:
+    post:
+      tags: [Investigation]
+      summary: Mark briefing as opened (worker in-progress tracking)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          description: Timestamp recorded
+
+  /cases/{caseId}/field-memo/audio:
+    post:
+      tags: [Investigation]
+      summary: Upload 51B field voice memo for transcription
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Transcription queued
+
+  /cases/{caseId}/field-notes:
+    get:
+      tags: [Investigation]
+      summary: Get merged field notes (including transcribed memos)
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+    post:
+      tags: [Investigation]
+      summary: Submit field notes or voice memo reference
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                voiceMemoObjectKey:
+                  type: string
+      responses:
+        '200':
+          description: Notes saved
+
+  /cases/{caseId}/report51b/draft:
+    post:
+      tags: [Investigation]
+      summary: Generate AI draft 51B report
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report51BDraft'
+
+  /cases/{caseId}/report51b/approve:
+    post:
+      tags: [Investigation]
+      summary: Worker approves draft for supervisor routing
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approved]
+              properties:
+                approved:
+                  type: boolean
+                editedContent:
+                  type: string
+      responses:
+        '200':
+          description: Approval recorded
+
+  /cases/{caseId}/report51b/compliance-check:
+    post:
+      tags: [Investigation]
+      summary: Validate draft against policy schema
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceResult'
+
+  /audit/cases/{caseId}:
+    get:
+      tags: [Audit]
+      summary: Audit events for a case
+      parameters:
+        - $ref: '#/components/parameters/caseId'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEvent'
+
+  /admin/health:
+    get:
+      tags: [Admin]
+      summary: System component health (admin)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealth'
+
+  /admin/models:
+    get:
+      tags: [Admin]
+      summary: AI model registry summary (no PII)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModelInfo'
+
+  /admin/triage-config:
+    get:
+      tags: [Admin]
+      summary: Get triage keyword patterns and LLM indicators (with defaults)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/TriageConfig'
+                  defaults:
+                    $ref: '#/components/schemas/TriageConfig'
+    put:
+      tags: [Admin]
+      summary: Save triage configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageConfig'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/TriageConfig'
+
+  /admin/risk-framework:
+    get:
+      tags: [Admin]
+      summary: Get statistical risk framework weights (with defaults)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/RiskFramework'
+                  defaults:
+                    $ref: '#/components/schemas/RiskFramework'
+    put:
+      tags: [Admin]
+      summary: Save statistical risk framework
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskFramework'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/RiskFramework'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    caseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 51A-2024-0847
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        version:
+          type: string
+
+    DemoLoginRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [screener, supervisor, worker, admin]
+        displayName:
+          type: string
+          example: John Smith
+        areaOffice:
+          type: string
+          example: Springfield
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+        role:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+        areaOffice:
+          type: string
+
+    CreateCaseRequest:
+      type: object
+      properties:
+        emergencyHint:
+          type: boolean
+          default: false
+
+    UpdateCaseRequest:
+      type: object
+      properties:
+        fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldValue'
+
+    FieldValue:
+      type: object
+      properties:
+        value:
+          type: string
+        source:
+          type: string
+          enum: [human, ai, ccwis]
+        confirmed:
+          type: boolean
+
+    CaseSummary:
+      type: object
+      properties:
+        caseId:
+          type: string
+        childDisplay:
+          type: string
+        status:
+          type: string
+        form51aCheckpointStatus:
+          $ref: '#/components/schemas/Form51ACheckpointStatus'
+        riskScore:
+          type: integer
+          minimum: 1
+          maximum: 20
+        triageFlagCount:
+          type: integer
+        emergency:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    Form51ACheckpointStatus:
+      type: string
+      enum:
+        - not_started
+        - ai_populating
+        - ready_for_review
+        - incomplete
+        - complete
+        - locked
+
+    Form51A:
+      type: object
+      required: [caseId, checkpointStatus, sections, completion]
+      properties:
+        caseId:
+          type: string
+        checkpointStatus:
+          $ref: '#/components/schemas/Form51ACheckpointStatus'
+        sections:
+          type: object
+          required: [child, incident, reporter, household]
+          properties:
+            child:
+              $ref: '#/components/schemas/Form51ASection'
+            incident:
+              $ref: '#/components/schemas/Form51ASection'
+            reporter:
+              $ref: '#/components/schemas/Form51ASection'
+            household:
+              $ref: '#/components/schemas/Form51ASection'
+        completion:
+          $ref: '#/components/schemas/Form51ACompletion'
+
+    Form51ASection:
+      type: object
+      properties:
+        title:
+          type: string
+        icon:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Form51AField'
+
+    Form51AField:
+      type: object
+      properties:
+        label:
+          type: string
+        required:
+          type: boolean
+        value:
+          type: string
+        source:
+          type: string
+          enum: [human, ai, ccwis]
+        aiConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        confirmedByHuman:
+          type: boolean
+        missing:
+          type: boolean
+        multiline:
+          type: boolean
+
+    Form51ACompletion:
+      type: object
+      properties:
+        mandatoryTotal:
+          type: integer
+        mandatoryFilled:
+          type: integer
+        aiFieldsPendingConfirmation:
+          type: integer
+        sectionsComplete:
+          type: array
+          items:
+            type: string
+            enum: [child, incident, reporter, household]
+        canSubmitToSupervisor:
+          type: boolean
+          description: True only when checkpoint can be completed and submit allowed
+
+    Form51AFieldUpdates:
+      type: object
+      required: [fields]
+      properties:
+        fields:
+          type: array
+          items:
+            type: object
+            required: [sectionId, fieldId, value]
+            properties:
+              sectionId:
+                type: string
+                enum: [child, incident, reporter, household]
+              fieldId:
+                type: string
+              value:
+                type: string
+
+    Form51ACheckpointResult:
+      type: object
+      properties:
+        checkpointStatus:
+          type: string
+          enum: [complete]
+        completedAt:
+          type: string
+          format: date-time
+        backgroundChecksStarted:
+          type: boolean
+
+    Official51AFieldMap:
+      type: object
+      description: Key-value pairs for fill51A() — HTML input name attributes
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: boolean
+      example:
+        child1_name: Emma Johnson
+        child1_address: 142 Maple St, Springfield, MA 01103
+        child1_female: true
+        child1_age: "7-8 years"
+        q_nature: "Nature of allegation: Physical Abuse / Neglect\n\nCaller observed bruising..."
+        mandatory: false
+        voluntary: true
+        report_date: "05/28/2026"
+
+    Form51AValidationError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: FORM_51A_INCOMPLETE
+        message:
+          type: string
+        missingFields:
+          type: array
+          items:
+            type: string
+        unconfirmedAiFields:
+          type: array
+          items:
+            type: string
+        checkpointStatus:
+          $ref: '#/components/schemas/Form51ACheckpointStatus'
+
+    CaseDetail:
+      allOf:
+        - $ref: '#/components/schemas/CaseSummary'
+        - type: object
+          properties:
+            fields:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/FieldValue'
+            pipeline:
+              $ref: '#/components/schemas/PipelineStatus'
+
+    PipelineStatus:
+      type: object
+      properties:
+        currentStage:
+          type: string
+        stages:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [pending, running, complete, failed]
+
+    Transcript:
+      type: object
+      properties:
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              speaker:
+                type: string
+                enum: [S, C]
+              text:
+                type: string
+              keywordFlag:
+                type: boolean
+
+    RiskAssessment:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, running, ready, failed]
+          description: Pipeline state when no persisted score yet
+        score:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+        label:
+          type: string
+        modelVersion:
+          type: string
+          description: Statistical framework version (e.g. statistical-v1)
+        contributingFactors:
+          type: array
+          items:
+            type: string
+        advisoryOnly:
+          type: boolean
+          default: true
+
+    TriageConfig:
+      type: object
+      properties:
+        keywordPatterns:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              pattern:
+                type: string
+              flags:
+                type: string
+        triageIndicators:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+              severity:
+                type: string
+                enum: [high, critical]
+        escalationThreshold:
+          type: integer
+
+    RiskFramework:
+      type: object
+      description: Rule-based additive risk weights (demo statistical-v1)
+      properties:
+        version:
+          type: string
+        scaleMin:
+          type: integer
+        scaleMax:
+          type: integer
+        baselinePoints:
+          type: number
+        emergencyPoints:
+          type: number
+        keywordPoints:
+          type: object
+          additionalProperties:
+            type: number
+        defaultKeywordPoints:
+          type: number
+        triageSeverityPoints:
+          type: object
+          properties:
+            critical:
+              type: number
+            high:
+              type: number
+        pendingTriageMultiplier:
+          type: number
+        bands:
+          type: array
+          items:
+            type: object
+            properties:
+              min:
+                type: integer
+              label:
+                type: string
+
+    TriageFlag:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        severity:
+          type: string
+          enum: [high, critical]
+        evidence:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, dismissed]
+
+    TriageDecisionRequest:
+      type: object
+      required: [flagId, action]
+      properties:
+        flagId:
+          type: string
+        action:
+          type: string
+          enum: [confirm, dismiss]
+        dismissalReason:
+          type: string
+          minLength: 5
+
+    BackgroundCheckStatus:
+      type: object
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [pending, running, complete, failed]
+              recordFound:
+                type: boolean
+                nullable: true
+        summaryAvailable:
+          type: boolean
+
+    AssistantMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [success, warning, critical, info, user]
+        message:
+          type: string
+        fieldJump:
+          type: string
+
+    ScreeningQueueItem:
+      type: object
+      properties:
+        caseId:
+          type: string
+        childDisplay:
+          type: string
+        riskScore:
+          type: integer
+        emergency:
+          type: boolean
+        aiSummary:
+          type: string
+        aiRecommendation:
+          type: string
+        screenerName:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    ScreeningDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve_screen_in, screen_out, request_clarification]
+        rationale:
+          type: string
+        responseType:
+          type: string
+
+    Briefing:
+      type: object
+      properties:
+        caseId:
+          type: string
+        childDisplay:
+          type: string
+        address:
+          type: string
+        riskScore:
+          type: integer
+        riskFactors:
+          type: array
+          items:
+            type: string
+        protectiveFactors:
+          type: array
+          items:
+            type: string
+        collateralContacts:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              role:
+                type: string
+              phone:
+                type: string
+        leAccompanimentRecommended:
+          type: boolean
+        leReason:
+          type: string
+        communityResources:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              claim:
+                type: string
+              source:
+                type: string
+
+    Report51BDraft:
+      type: object
+      properties:
+        version:
+          type: integer
+        content:
+          type: string
+        aiGenerated:
+          type: boolean
+        status:
+          type: string
+          enum: [draft, worker_approved, submitted]
+
+    ComplianceResult:
+      type: object
+      properties:
+        passed:
+          type: boolean
+        missingFields:
+          type: array
+          items:
+            type: string
+
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        caseId:
+          type: string
+        eventType:
+          type: string
+        actorId:
+          type: string
+        actorRole:
+          type: string
+        payload:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    SystemHealth:
+      type: object
+      properties:
+        uptime:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [up, down, degraded]
+
+    ModelInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+        metric:
+          type: string

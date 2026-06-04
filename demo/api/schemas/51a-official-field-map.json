@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dcf-ait.demo/schemas/51a-official-field-map.json",
+  "title": "Map intake Form51A → official HTML field names",
+  "description": "Maps internal section.fieldId values to name= attributes in templates/51A-Report-Form.html (fill51A API).",
+  "templatePath": "templates/51A-Report-Form.html",
+  "sourceArtifact": "dcf/51A-Report-Form.html",
+  "mappings": [
+    { "from": { "section": "child", "fieldId": "child_name" }, "to": "child1_name", "transform": "direct" },
+    { "from": { "section": "child", "fieldId": "child_addr" }, "to": "child1_address", "transform": "direct" },
+    { "from": { "section": "child", "fieldId": "child_age" }, "to": "child1_age", "transform": "direct" },
+    { "from": { "section": "child", "fieldId": "child_dob" }, "to": "child1_age", "transform": "preferIfPresent", "note": "DOB overrides approximate age when set" },
+    {
+      "from": { "section": "child", "fieldId": "child_gender" },
+      "to": ["child1_male", "child1_female"],
+      "transform": "genderCheckboxes",
+      "values": { "Male": { "child1_male": true }, "Female": { "child1_female": true }, "M": { "child1_male": true }, "F": { "child1_female": true } }
+    },
+    {
+      "from": { "section": "household", "fieldId": "other_kids" },
+      "to": "child2_name",
+      "transform": "directOptional",
+      "alsoMap": [{ "section": "household", "fieldId": "other_kids", "to": "child2_age", "transform": "extractAgeFromText" }]
+    },
+    {
+      "from": { "section": "household", "fieldId": "caregiver" },
+      "to": { "pg1_first": "first", "pg1_last": "last", "pg1_middle": "middle" },
+      "transform": "splitPersonName"
+    },
+    { "from": { "section": "household", "fieldId": "caregiver_phone" }, "to": "pg1_phone", "transform": "directOptional" },
+    { "from": { "section": "household", "fieldId": "caregiver_dob" }, "to": "pg1_dob", "transform": "directOptional" },
+    {
+      "from": { "section": "child", "fieldId": "child_addr" },
+      "to": { "pg1_street": "street", "pg1_city": "city", "pg1_state": "state", "pg1_zip": "zip" },
+      "transform": "splitUsAddress",
+      "alsoApplyTo": { "section": "household", "fieldId": "caregiver", "when": "sameHouseholdAsChild" }
+    },
+    {
+      "from": { "section": "household", "fieldId": "caregiver2" },
+      "to": { "pg2_first": "first", "pg2_last": "last", "pg2_middle": "middle" },
+      "transform": "splitPersonNameOptional"
+    },
+    {
+      "from": { "section": "household", "fieldId": "caregiver2_addr" },
+      "to": { "pg2_street": "street", "pg2_city": "city", "pg2_state": "state", "pg2_zip": "zip" },
+      "transform": "splitUsAddressOptional"
+    },
+    { "from": { "section": "household", "fieldId": "caregiver2_phone" }, "to": "pg2_phone", "transform": "directOptional" },
+    { "from": { "section": "household", "fieldId": "caregiver2_dob" }, "to": "pg2_dob", "transform": "directOptional" },
+    {
+      "from": { "section": "reporter", "fieldId": "rep_type" },
+      "to": ["mandatory", "voluntary"],
+      "transform": "reporterTypeCheckboxes",
+      "patterns": {
+        "mandatory": ["mandated", "mandatory", "physician", "teacher", "police", "nurse", "social worker", "counselor"],
+        "voluntary": ["community", "neighbor", "voluntary", "anonymous", "family friend", "relative"]
+      }
+    },
+    {
+      "from": { "section": "reporter", "fieldId": "rep_name" },
+      "to": { "rep_first": "first", "rep_last": "last", "rep_middle": "middle", "rep_institution": "institution" },
+      "transform": "splitReporterNameOrConfidential"
+    },
+    {
+      "from": { "section": "reporter", "fieldId": "rep_relationship" },
+      "to": "rep_institution",
+      "transform": "relationshipToInstitution"
+    },
+    {
+      "from": { "section": "reporter", "fieldId": "rep_addr" },
+      "to": { "rep_street": "street", "rep_city": "city", "rep_state": "state", "rep_zip": "zip" },
+      "transform": "splitUsAddressOptional"
+    },
+    { "from": { "section": "reporter", "fieldId": "rep_phone" }, "to": "rep_phone", "transform": "direct" },
+    {
+      "from": { "section": "reporter", "fieldId": "rep_is_caretaker" },
+      "to": ["caretaker_yes", "caretaker_no"],
+      "transform": "caretakerCheckboxes"
+    },
+    {
+      "from": { "section": "incident", "fieldId": "allegation" },
+      "to": "q_nature",
+      "transform": "composePrefix",
+      "prefix": "Nature of allegation: "
+    },
+    {
+      "from": { "section": "incident", "fieldId": "description" },
+      "to": "q_nature",
+      "transform": "composeAppend",
+      "separator": "\n\n"
+    },
+    {
+      "from": { "section": "household", "fieldId": "alleged" },
+      "to": "q_responsible",
+      "transform": "composePrefix",
+      "prefix": "Alleged responsible party: "
+    },
+    {
+      "from": { "section": "incident", "fieldId": "inc_date" },
+      "to": "q_circumstances",
+      "transform": "composePrefix",
+      "prefix": "Date/time of incident: "
+    },
+    {
+      "from": { "section": "incident", "fieldId": "incident_location" },
+      "to": "q_circumstances",
+      "transform": "composeAppend",
+      "prefix": "Location: ",
+      "separator": "\n"
+    },
+    {
+      "from": { "section": "incident", "fieldId": "description" },
+      "to": "q_circumstances",
+      "transform": "composeAppend",
+      "separator": "\n\n"
+    },
+    { "from": { "section": "incident", "fieldId": "dv_concerns" }, "to": "q_dv", "transform": "directOptional" },
+    { "from": { "section": "filing", "fieldId": "action_taken" }, "to": "q_action", "transform": "composeAppend" },
+    { "from": { "section": "filing", "fieldId": "protective_strengths" }, "to": "q_strengths", "transform": "composeAppend" },
+    {
+      "from": "system",
+      "fieldId": "report_date",
+      "to": "report_date",
+      "transform": "systemNow",
+      "format": "MM/DD/YYYY"
+    },
+    {
+      "from": "system",
+      "fieldId": "area_office_phone",
+      "to": "_metadata.only",
+      "transform": "areaOfficeFromCase",
+      "note": "Displayed in toolbar subtitle when rendering HTML"
+    }
+  ],
+  "unmappedOfficialFields": {
+    "description": "Completed manually on 51A tab or left blank when not stated on call",
+    "fields": ["signature"]
+  }
+}

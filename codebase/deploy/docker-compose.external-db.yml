@@ -1,0 +1,21 @@
+# Use an existing Postgres on the host (not the bundled container).
+# Usage:
+#   DATABASE_URL=postgresql://foundry:foundry@host.docker.internal:5432/appdb
+#   docker compose -f docker-compose.yml -f docker-compose.external-db.yml up -d
+#
+# Note: 127.0.0.1 inside a container is the container itself — use host.docker.internal.
+
+name: dcf-ait
+
+services:
+  api:
+    environment:
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL required for external Postgres}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ai-worker:
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

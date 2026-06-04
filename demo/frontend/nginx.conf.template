@@ -1,0 +1,15 @@
+server {
+  listen 3000;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location = __APP_BASE__ {
+    return 301 __APP_BASE__/;
+  }
+
+  location __APP_BASE__/ {
+    alias /usr/share/nginx/html/;
+    try_files $uri $uri/ __APP_BASE__/index.html;
+  }
+}

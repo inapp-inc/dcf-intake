@@ -1,0 +1,109 @@
+# DCF AIT — simplified demo stack (SQLite, no Redis/Postgres/MinIO)
+# Usage: cp .env.example .env && docker compose up -d --build
+# Public URL: https://foundry.inapp.com/dcfintake/ via host nginx → :4010
+
+name: dcf-ait-demo
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${AIT_HTTP_PORT:-4010}:80"
+    environment:
+      - APP_BASE_PATH=${APP_BASE_PATH:-/dcfintake}
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    volumes:
+      - ./nginx/nginx.conf.http-only.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - demo-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/dcfintake/}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/dcfintake/api/v1}
+        APP_BASE_PATH: ${APP_BASE_PATH:-/dcfintake}
+    networks:
+      - demo-net
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=8080
+      - DATABASE_URL=sqlite:////data/ait.db
+      - ARTIFACT_DIR=/data/artifacts
+      - JWT_SECRET=${JWT_SECRET}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://foundry.inapp.com}
+      - LLM_PROVIDER=${LLM_PROVIDER:-huggingface}
+      - HF_API_TOKEN=${HF_API_TOKEN:-}
+      - HF_MODEL=${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - HF_API_BASE=${HF_API_BASE:-https://router.huggingface.co/v1}
+      - LLM_REQUEST_TIMEOUT_MS=${LLM_REQUEST_TIMEOUT_MS:-600000}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - HF_ASR_MODEL=${HF_ASR_MODEL:-openai/whisper-large-v3}
+      - HF_ASR_API_URL=${HF_ASR_API_URL:-}
+      - ASR_REQUEST_TIMEOUT_MS=${ASR_REQUEST_TIMEOUT_MS:-600000}
+      - NLP_CONFIDENCE_THRESHOLD=${NLP_CONFIDENCE_THRESHOLD:-0.65}
+    volumes:
+      - demo-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+    networks:
+      - demo-net
+    restart: unless-stopped
+
+  ai-bundle:
+    build:
+      context: .
+      dockerfile: ai-bundle/Dockerfile
+    environment:
+      - DATABASE_URL=sqlite:////data/ait.db
+      - ARTIFACT_DIR=/data/artifacts
+      - LLM_PROVIDER=${LLM_PROVIDER:-huggingface}
+      - HF_API_TOKEN=${HF_API_TOKEN:-}
+      - HF_MODEL=${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - HF_API_BASE=${HF_API_BASE:-https://router.huggingface.co/v1}
+      - LLM_REQUEST_TIMEOUT_MS=${LLM_REQUEST_TIMEOUT_MS:-600000}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://127.0.0.1:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - HF_ASR_MODEL=${HF_ASR_MODEL:-openai/whisper-large-v3}
+      - HF_ASR_API_URL=${HF_ASR_API_URL:-}
+      - ASR_REQUEST_TIMEOUT_MS=${ASR_REQUEST_TIMEOUT_MS:-600000}
+      - API_BASE_URL=http://api:8080/api/v1
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      - NLP_CONFIDENCE_THRESHOLD=${NLP_CONFIDENCE_THRESHOLD:-0.65}
+      - DEMO_MOCK_CCWIS_PRIOR_INCIDENTS=${DEMO_MOCK_CCWIS_PRIOR_INCIDENTS:-0}
+    volumes:
+      - demo-data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - demo-net
+    restart: unless-stopped
+
+volumes:
+  demo-data:
+
+networks:
+  demo-net:
+    driver: bridge

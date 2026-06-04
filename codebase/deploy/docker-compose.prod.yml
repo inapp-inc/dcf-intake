@@ -1,0 +1,37 @@
+# DCF AIT — production-oriented overlay (TLS certs required)
+# Usage:
+#   cp .env.example .env   # set strong secrets; never use defaults below
+#   ./scripts/gen-dev-certs.sh   # or mount real certs to nginx/certs/
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# See Docs/HANDOVER.md and Docs/SEED-005-OWASP-CLOSEOUT.md
+
+name: dcf-ait
+
+services:
+  nginx:
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${NGINX_CERTS_DIR:-./nginx/certs}:/etc/nginx/certs:ro
+
+  api:
+    environment:
+      - NODE_ENV=production
+    # Production must set JWT_SECRET and INTERNAL_API_KEY in .env (API refuses default internal key)
+
+  ai-worker:
+    environment:
+      - NODE_ENV=production
+
+  postgres:
+    restart: always
+
+  redis:
+    restart: always
+
+  minio:
+    restart: always
+
+  ollama:
+    restart: always

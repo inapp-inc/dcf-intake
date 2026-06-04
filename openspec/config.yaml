@@ -1,0 +1,35 @@
+# OpenSpec project context — DCF Automated Intake Tool (Demo)
+project:
+  name: dcf-ait
+  description: >
+    Massachusetts DCF Automated Intake Tool demonstration platform.
+    AI-assisted 51A intake and 51B investigation with human-in-the-loop governance.
+  root: DCF-Intake
+
+context:
+  prd: DCF_AIT_PRD.md
+  ui_mockup: mockup/DCF_AIT_UI.jsx
+  official_51a_template: dcf/51A-Report-Form.html
+  official_51a_mapping: codebase/api/schemas/51a-official-field-map.json
+  architecture: Docs/DCF-AIT-PLATFORM-ARCHITECTURE.md
+  fsd: Docs/FSD-DEMO.md
+  assumptions: Docs/SDD_Assumptions.md
+  api_contract: openapi.yaml
+  demo_change_spec: openspec/changes/demo-enhancements-2026-05/
+  demo_risk_doc: demo/docs/risk-scoring-framework.md
+
+rules:
+  - Use RFC 2119 keywords in requirements (MUST, SHALL, SHOULD, MAY).
+  - Every requirement MUST have at least one Scenario with Given/When/Then.
+  - Human-in-the-loop constraints are system invariants, not configurable flags.
+  - Demo integrations MUST be clearly labeled; production adapters are out of scope for v1 demo.
+
+domains:
+  - auth-rbac
+  - intake
+  - form-51a
+  - screening
+  - investigation
+  - ai-pipeline
+  - ai-capabilities
+  - audit

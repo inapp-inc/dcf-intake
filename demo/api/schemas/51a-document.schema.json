@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dcf-ait.demo/schemas/51a-document.schema.json",
+  "title": "Form51ADocument",
+  "description": "Structured data model for the official MA DCF 51A report form (templates/51A-Report-Form.html).",
+  "type": "object",
+  "required": ["caseId", "reportDate", "children", "parentGuardian1", "parentGuardian2", "reporter", "narrative"],
+  "properties": {
+    "caseId": { "type": "string" },
+    "reportDate": { "type": "string" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "children": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/childEntry" }
+    },
+    "parentGuardian1": { "$ref": "#/$defs/parentGuardian" },
+    "parentGuardian2": { "$ref": "#/$defs/parentGuardian" },
+    "reporter": { "$ref": "#/$defs/reporter" },
+    "narrative": { "$ref": "#/$defs/narrative" }
+  },
+  "$defs": {
+    "childEntry": {
+      "type": "object",
+      "required": ["name", "address", "male", "female", "ageOrDob"],
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "male": { "type": "boolean" },
+        "female": { "type": "boolean" },
+        "ageOrDob": { "type": "string" }
+      }
+    },
+    "parentGuardian": {
+      "type": "object",
+      "properties": {
+        "first": { "type": "string" },
+        "last": { "type": "string" },
+        "middle": { "type": "string" },
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "zip": { "type": "string" },
+        "phone": { "type": "string" },
+        "dob": { "type": "string" }
+      }
+    },
+    "reporter": {
+      "type": "object",
+      "properties": {
+        "mandatory": { "type": "boolean" },
+        "voluntary": { "type": "boolean" },
+        "first": { "type": "string" },
+        "last": { "type": "string" },
+        "middle": { "type": "string" },
+        "institution": { "type": "string" },
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "zip": { "type": "string" },
+        "phone": { "type": "string" },
+        "caretakerYes": { "type": "boolean" },
+        "caretakerNo": { "type": "boolean" }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "properties": {
+        "nature": { "type": "string" },
+        "responsible": { "type": "string" },
+        "circumstances": { "type": "string" },
+        "action": { "type": "string" },
+        "dv": { "type": "string" },
+        "strengths": { "type": "string" },
+        "signature": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events { worker_connections 1024; }
+
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+  sendfile on;
+
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Content-Security-Policy "default-src 'self'; connect-src 'self' wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;" always;
+
+  limit_req_zone $binary_remote_addr zone=api:10m rate=30r/s;
+
+  map $http_x_forwarded_proto $ait_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+  }
+
+  upstream frontend { server frontend:3000; }
+  upstream api { server api:8080; }
+
+  # HTTP only — for use behind the VM's existing nginx (TLS on host :443).
+  server {
+    listen 80;
+    server_name _;
+
+    location = / {
+      return 302 __APP_BASE__/;
+    }
+
+    location __APP_BASE__/ {
+      proxy_pass http://frontend;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $ait_forwarded_proto;
+      proxy_set_header X-Forwarded-Prefix __APP_BASE__;
+    }
+
+    location __APP_BASE__/api/ {
+      limit_req zone=api burst=50 nodelay;
+      proxy_pass http://api/api/;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $ait_forwarded_proto;
+      proxy_set_header X-Request-Id $request_id;
+    }
+
+    location __APP_BASE__/ws/ {
+      proxy_pass http://api/ws/;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $ait_forwarded_proto;
+    }
+  }
+}

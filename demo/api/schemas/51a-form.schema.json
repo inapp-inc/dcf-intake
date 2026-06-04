@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dcf-ait.demo/schemas/51a-form.json",
+  "title": "DCF 51A Intake Form",
+  "description": "Canonical section and field IDs for demo platform; aligns with mockup/DCF_AIT_UI.jsx FORM_FIELDS",
+  "type": "object",
+  "required": ["sections", "checkpointStatus"],
+  "properties": {
+    "caseId": { "type": "string" },
+    "checkpointStatus": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "ai_populating",
+        "ready_for_review",
+        "incomplete",
+        "complete",
+        "locked"
+      ]
+    },
+    "sections": {
+      "type": "object",
+      "required": ["child", "incident", "reporter", "household", "filing"],
+      "properties": {
+        "child": { "$ref": "#/$defs/section" },
+        "incident": { "$ref": "#/$defs/section" },
+        "reporter": { "$ref": "#/$defs/section" },
+        "household": { "$ref": "#/$defs/section" },
+        "filing": { "$ref": "#/$defs/section" }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "properties": {
+        "mandatoryTotal": { "type": "integer" },
+        "mandatoryFilled": { "type": "integer" },
+        "aiFieldsPendingConfirmation": { "type": "integer" },
+        "sectionsComplete": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["title", "fields"],
+      "properties": {
+        "title": { "type": "string" },
+        "icon": { "type": "string" },
+        "fields": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/field" }
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["label", "required"],
+      "properties": {
+        "label": { "type": "string" },
+        "required": { "type": "boolean" },
+        "value": { "type": "string" },
+        "source": {
+          "type": "string",
+          "enum": ["human", "ai", "ccwis"]
+        },
+        "aiConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confirmedByHuman": { "type": "boolean", "default": false },
+        "missing": { "type": "boolean", "default": false },
+        "multiline": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

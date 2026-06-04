@@ -1,0 +1,13 @@
+---
+description: User changes apply only to the demo stack under demo/
+alwaysApply: true
+---
+
+# Demo-only changes
+
+When the user requests implementation, fixes, scripts, config, or docs updates:
+
+- **Edit only** paths under `demo/` (e.g. `demo/api`, `demo/frontend`, `demo/worker`, `demo/scripts`, `demo/nginx`, `demo/docker-compose.yml`, `demo/README.md`).
+- **Do not modify** `codebase/`, root `scripts/`, or production deploy assets unless the user explicitly asks for production/full-stack changes.
+- If a fix is needed in shared logic, implement the equivalent in the `demo/` copies only.
+- Demo docs: prefer updating `demo/README.md` over root `Docs/` unless the user asks otherwise.
