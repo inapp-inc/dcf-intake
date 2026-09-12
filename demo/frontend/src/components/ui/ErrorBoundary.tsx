@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </pre>
           <button
             type="button"
-            className="dcf-btn"
+            className="app-btn"
             style={{ marginTop: 14, background: C.navy, color: "#fff" }}
             onClick={() => this.setState({ error: null })}
           >

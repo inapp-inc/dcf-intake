@@ -90,7 +90,7 @@ export function TriageSection({
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button
                       type="button"
-                      className="dcf-btn"
+                      className="app-btn"
                       style={{ background: C.coral, color: "#fff", fontSize: 11, padding: "5px 12px" }}
                       onClick={() => onDecision?.(flag.id, "confirm")}
                     >
@@ -98,7 +98,7 @@ export function TriageSection({
                     </button>
                     <button
                       type="button"
-                      className="dcf-btn ghost-btn"
+                      className="app-btn ghost-btn"
                       style={{ fontSize: 11, padding: "5px 12px" }}
                       onClick={() => setDismissing(flag.id)}
                     >
@@ -110,7 +110,7 @@ export function TriageSection({
               {dismissing === flag.id && (
                 <div className="fade-in" style={{ marginTop: 10, display: "flex", gap: 8 }}>
                   <input
-                    className="dcf-input"
+                    className="app-input"
                     style={{ flex: 1, fontSize: 12 }}
                     placeholder="Reason for dismissal (required)…"
                     value={reason}
@@ -118,7 +118,7 @@ export function TriageSection({
                   />
                   <button
                     type="button"
-                    className="dcf-btn"
+                    className="app-btn"
                     style={{ background: C.navy, color: "#fff", fontSize: 12 }}
                     onClick={() => {
                       if (reason.trim().length >= 5) {

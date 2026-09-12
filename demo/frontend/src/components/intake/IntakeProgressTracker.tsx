@@ -40,7 +40,7 @@ export function IntakeProgressTracker({
     },
     {
       id: "nlp",
-      label: "51A field extraction",
+      label: "Initial Report field extraction",
       detail:
         form?.checkpointStatus === "ai_populating"
           ? "AI extracting intake fields…"
@@ -71,7 +71,7 @@ export function IntakeProgressTracker({
     },
     {
       id: "form",
-      label: "51A form completion",
+      label: "Initial Report form completion",
       detail: completion
         ? `${completion.mandatoryFilled}/${completion.mandatoryTotal} required fields · ${completion.aiFieldsPendingConfirmation} AI to confirm`
         : "Loading form…",
@@ -83,7 +83,7 @@ export function IntakeProgressTracker({
     },
     {
       id: "checkpoint",
-      label: "51A checkpoint",
+      label: "Initial Report checkpoint",
       detail: form ? formatCheckpointStatus(form.checkpointStatus) : "—",
       state:
         form?.checkpointStatus === "complete" || form?.checkpointStatus === "locked"

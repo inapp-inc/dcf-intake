@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dcf-ait.demo/schemas/51a-form.json",
-  "title": "DCF 51A Intake Form",
-  "description": "Canonical section and field IDs for demo platform; aligns with mockup/DCF_AIT_UI.jsx FORM_FIELDS",
+  "$id": "https://intake.demo/schemas/initial-report-form.json",
+  "title": "Initial Report Intake Form",
+  "description": "Canonical section and field IDs for the agency-neutral demo platform",
   "type": "object",
   "required": ["sections", "checkpointStatus"],
   "properties": {

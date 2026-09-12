@@ -1,8 +1,8 @@
-# DCF AIT — simplified demo stack (SQLite, no Redis/Postgres/MinIO)
+# Child welfare intake demo stack (SQLite, no Redis/Postgres/MinIO)
 # Usage: cp .env.example .env && docker compose up -d --build
-# Public URL: https://foundry.inapp.com/dcfintake/ via host nginx → :4010
+# Public URL: https://foundry.inapp.com/intake/ via host nginx → :4010
 
-name: dcf-ait-demo
+name: intake-demo
 
 services:
   nginx:
@@ -10,7 +10,7 @@ services:
     ports:
       - "${AIT_HTTP_PORT:-4010}:80"
     environment:
-      - APP_BASE_PATH=${APP_BASE_PATH:-/dcfintake}
+      - APP_BASE_PATH=${APP_BASE_PATH:-/intake}
     entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
     volumes:
       - ./nginx/nginx.conf.http-only.template:/etc/nginx/nginx.conf.template:ro
@@ -29,9 +29,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_BASE_PATH: ${VITE_BASE_PATH:-/dcfintake/}
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/dcfintake/api/v1}
-        APP_BASE_PATH: ${APP_BASE_PATH:-/dcfintake}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/intake/}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/intake/api/v1}
+        APP_BASE_PATH: ${APP_BASE_PATH:-/intake}
     networks:
       - demo-net
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
       - CORS_ORIGIN=${CORS_ORIGIN:-https://foundry.inapp.com}
       - LLM_PROVIDER=${LLM_PROVIDER:-huggingface}
       - HF_API_TOKEN=${HF_API_TOKEN:-}
-      - HF_MODEL=${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - HF_MODEL=${HF_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
       - HF_API_BASE=${HF_API_BASE:-https://router.huggingface.co/v1}
       - LLM_REQUEST_TIMEOUT_MS=${LLM_REQUEST_TIMEOUT_MS:-600000}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
@@ -80,7 +80,7 @@ services:
       - ARTIFACT_DIR=/data/artifacts
       - LLM_PROVIDER=${LLM_PROVIDER:-huggingface}
       - HF_API_TOKEN=${HF_API_TOKEN:-}
-      - HF_MODEL=${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - HF_MODEL=${HF_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
       - HF_API_BASE=${HF_API_BASE:-https://router.huggingface.co/v1}
       - LLM_REQUEST_TIMEOUT_MS=${LLM_REQUEST_TIMEOUT_MS:-600000}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://127.0.0.1:11434}

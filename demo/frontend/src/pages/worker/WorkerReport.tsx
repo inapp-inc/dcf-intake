@@ -149,7 +149,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <BackButton onClick={onBack} />
           <div style={{ fontSize: 18, fontWeight: 700, color: C.textDark, fontFamily: "'Fraunces', serif" }}>
-            51B Field Report — {formatCaseTitle(undefined, caseId)}
+            Field Report — {formatCaseTitle(undefined, caseId)}
           </div>
           <Report51bStatusChip caseRow={caseRow} />
         </div>
@@ -163,7 +163,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
         <div className="card" style={{ padding: "15px 17px" }}>
           <div className="sec-title">Field Notes & Voice Memos</div>
           <textarea
-            className="dcf-input dcf-ta"
+            className="app-input app-ta"
             style={{ minHeight: 120, marginBottom: 12 }}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -202,7 +202,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
                   Upload voice memo · MP3, WAV, M4A, and other audio formats
                 </div>
                 <div style={{ fontSize: 11, color: C.textLight, marginTop: 6 }}>
-                  Transcribed with the same Hugging Face ASR as 51A intake (may take several minutes)
+                  Transcribed with the same Hugging Face ASR as Initial Report intake (may take several minutes)
                 </div>
               </>
             )}
@@ -236,7 +236,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
           </div>
           <button
             type="button"
-            className="dcf-btn"
+            className="app-btn"
             style={{ background: C.teal, color: "#fff", width: "100%", justifyContent: "center" }}
             disabled={generating || memoBusy}
             onClick={() => void generate(notes)}
@@ -266,14 +266,14 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
               </div>
             ) : generating ? (
               <LoadingBlock
-                message="AI is writing the 51B draft…"
+                message="AI is writing the Field Report draft…"
                 hint="Hugging Face LLM in the demo stack can take several minutes."
                 minHeight={200}
               />
             ) : (
               <div className="fade-in">
                 <textarea
-                  className="dcf-input dcf-ta"
+                  className="app-input app-ta"
                   style={{
                     minHeight: 200,
                     background: C.tealPale,
@@ -299,7 +299,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
                   }}
                 >
                   <div style={{ fontWeight: 700, color: C.textDark, marginBottom: 4 }}>About compliance check</div>
-                  Advisory demo check only — it does not replace DCF policy or supervisor review. The API scans your
+                  Advisory demo check only — it does not replace agency policy or supervisor review. The API scans your
                   draft text (case-insensitive) for the words <strong>FINDINGS</strong>, <strong>DETERMINATION</strong>,
                   and <strong>VISIT</strong>, and requires at least 100 characters. AI drafts are prompted to include
                   FINDINGS and DETERMINATION; add “VISIT” or “VISIT DATE” if the check flags it. Submitting does not
@@ -308,7 +308,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
                 <div style={{ marginTop: 11, display: "flex", gap: 9 }}>
                   <button
                     type="button"
-                    className="dcf-btn"
+                    className="app-btn"
                     style={{ background: C.navy, color: "#fff", flex: 1, justifyContent: "center" }}
                     disabled={submitting || checking}
                     onClick={() => void submit(draft)}
@@ -318,7 +318,7 @@ export function WorkerReport({ caseId, onBack }: { caseId: string; onBack: () =>
                   </button>
                   <button
                     type="button"
-                    className="dcf-btn ghost-btn"
+                    className="app-btn ghost-btn"
                     disabled={submitting || checking}
                     onClick={() => void runCompliance(draft)}
                     title="Scan draft for required section labels and minimum length"

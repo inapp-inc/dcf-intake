@@ -136,7 +136,7 @@ export function RoleLoginForm({
               Username
             </span>
             <input
-              className="dcf-input"
+              className="app-input"
               type="text"
               autoComplete="username"
               value={username}
@@ -151,7 +151,7 @@ export function RoleLoginForm({
               Password
             </span>
             <input
-              className="dcf-input"
+              className="app-input"
               type="password"
               autoComplete="current-password"
               value={password}
@@ -179,7 +179,7 @@ export function RoleLoginForm({
 
           <button
             type="submit"
-            className="dcf-btn"
+            className="app-btn"
             disabled={pending}
             style={{
               width: "100%",

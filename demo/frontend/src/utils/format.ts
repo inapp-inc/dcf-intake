@@ -11,13 +11,13 @@ const STATUS_LABELS: Record<string, string> = {
   not_started: "Not Started",
 };
 
-/** 51A checkpoint — fine-grained screener-stage progress */
+/** Initial Report checkpoint — fine-grained screener-stage progress */
 export const CHECKPOINT_LABELS: Record<CheckpointStatus, string> = {
-  not_started: "51A not started",
+  not_started: "Initial Report not started",
   ai_populating: "AI populating fields",
   ready_for_review: "AI fields need review",
-  incomplete: "51A incomplete",
-  complete: "51A checkpoint done",
+  incomplete: "Initial Report incomplete",
+  complete: "Initial Report checkpoint done",
   locked: "Submitted to supervisor",
 };
 

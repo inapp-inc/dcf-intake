@@ -12,21 +12,21 @@ export type DemoUserRecord = {
 export const DEMO_USERS: DemoUserRecord[] = [
   {
     username: "screener.demo",
-    password: "Screener51a!",
+    password: "ScreenerInit!",
     role: "screener",
     displayName: "Jamie Rivera",
     areaOffice: "Springfield",
   },
   {
     username: "supervisor.demo",
-    password: "Supervisor51a!",
+    password: "SupervisorInit!",
     role: "supervisor",
     displayName: "Alex Morgan",
     areaOffice: "Springfield",
   },
   {
     username: "worker.demo",
-    password: "Worker51b!",
+    password: "WorkerField!",
     role: "worker",
     displayName: "Sam Okonkwo",
     areaOffice: "Springfield",
@@ -36,7 +36,7 @@ export const DEMO_USERS: DemoUserRecord[] = [
     password: "AdminDemo!",
     role: "admin",
     displayName: "Taylor Chen",
-    areaOffice: "DCF Central",
+    areaOffice: "Central Office",
   },
 ];
 

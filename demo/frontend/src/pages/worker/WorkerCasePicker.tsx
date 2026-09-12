@@ -27,11 +27,11 @@ export function WorkerCasePicker({
   );
 
   const items = data ?? EMPTY_CASES;
-  const title = target === "briefing" ? "51B Pre-Visit Briefing" : "Field Report";
+  const title = target === "briefing" ? "Field Pre-Visit Briefing" : "Field Report";
   const hint =
     target === "briefing"
       ? "Choose an assigned case to open the AI pre-visit briefing."
-      : "Choose an assigned case to write or edit the 51B field report.";
+      : "Choose an assigned case to write or edit the Field Report.";
 
   return (
     <PageShell style={{ gap: 13 }}>
@@ -47,7 +47,7 @@ export function WorkerCasePicker({
             !loading && items.length === 0 ? (
               <p style={{ fontSize: 13, color: C.textLight }}>
                 No assigned cases yet. A supervisor must approve screen-in before cases appear here.{" "}
-                <button type="button" className="dcf-btn ghost-btn" style={{ marginTop: 10 }} onClick={onGoDashboard}>
+                <button type="button" className="app-btn ghost-btn" style={{ marginTop: 10 }} onClick={onGoDashboard}>
                   Go to My Cases
                 </button>
               </p>
@@ -80,7 +80,7 @@ export function WorkerCasePicker({
                 {target === "report" && <Report51bStatusChip caseRow={c} />}
                 <button
                   type="button"
-                  className="dcf-btn"
+                  className="app-btn"
                   style={{ background: C.teal, color: "#fff", fontSize: 12 }}
                   onClick={() => onSelect(c.caseId)}
                 >

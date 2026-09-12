@@ -11,7 +11,7 @@ if [[ -f .env ]]; then
 fi
 
 PORT="${AIT_HTTP_PORT:-4010}"
-BASE="${APP_BASE_PATH:-/dcfintake}"
+BASE="${APP_BASE_PATH:-/intake}"
 API="${SMOKE_API_BASE:-http://127.0.0.1:${PORT}${BASE}/api/v1}"
 
 json_field() {
@@ -44,9 +44,9 @@ login_and_me() {
   echo "${token}"
 }
 
-TOKEN="$(login_and_me screener screener.demo 'Screener51a!')"
-login_and_me supervisor supervisor.demo 'Supervisor51a!'
-login_and_me worker worker.demo 'Worker51b!'
+TOKEN="$(login_and_me screener screener.demo 'ScreenerInit!')"
+login_and_me supervisor supervisor.demo 'SupervisorInit!'
+login_and_me worker worker.demo 'WorkerField!'
 login_and_me admin admin.demo 'AdminDemo!'
 
 echo "Smoke: POST ${API}/auth/demo-login (legacy screener shortcut)"

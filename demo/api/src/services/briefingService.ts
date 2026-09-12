@@ -105,7 +105,7 @@ export function normalizeBriefing(raw: unknown, caseId: string): BriefingPayload
     { name: "Primary care (verify)", role: "Pediatrician", phone: "(413) 555-0200" },
   ];
   const fallbackEvidence: BriefingPayload["evidence"] = [
-    { claim: "See 51A incident section", source: "51A intake form" },
+    { claim: "See Initial Report incident section", source: "Initial Report intake form" },
   ];
 
   const riskFactors = coerceStringArray(obj.riskFactors) ?? ["Review risk assessment in case file"];
@@ -227,15 +227,15 @@ export async function getOrCreateBriefing(caseId: string): Promise<BriefingPaylo
         "WIC Program — regional office",
         "Safe Families Network",
       ],
-      evidence: [{ claim: allegation || "See 51A incident section", source: "51A intake form" }],
+      evidence: [{ claim: allegation || "See Initial Report incident section", source: "Initial Report intake form" }],
     },
     caseId,
   )!;
 
   try {
     const raw = await llmChat(
-      "You are a DCF field worker assistant. Reply with JSON only, no markdown. Shape: {\"riskFactors\":[\"string\"],\"protectiveFactors\":[\"string\"],\"communityResources\":[\"string\"]}. Each array item must be a plain string sentence.",
-      `Case: ${briefing.childDisplay}, risk ${briefing.riskScore}/20. Known factors: ${riskFactors.join("; ") || "none yet"}. Allegation context: ${allegation || "see 51A"}.`,
+      "You are a child welfare field worker assistant. Reply with JSON only, no markdown. Shape: {\"riskFactors\":[\"string\"],\"protectiveFactors\":[\"string\"],\"communityResources\":[\"string\"]}. Each array item must be a plain string sentence.",
+      `Case: ${briefing.childDisplay}, risk ${briefing.riskScore}/20. Known factors: ${riskFactors.join("; ") || "none yet"}. Allegation context: ${allegation || "see Initial Report"}.`,
       { maxTokens: 1024 },
     );
     const parsed = parseLlmBriefing(raw);

@@ -71,13 +71,13 @@ function ScreenerHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOp
       <div className="card" style={{ padding: 16 }}>
         <div className="sec-title">Your work today</div>
         <p style={{ fontSize: 12, color: C.textLight, marginBottom: 12 }}>
-          Start a new hotline intake or continue an in-progress 51A.
+          Start a new hotline intake or continue an in-progress Initial Report.
         </p>
         <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-          <button type="button" className="dcf-btn" style={{ background: C.teal, color: "#fff" }} onClick={() => onDrill("intake")}>
-            + New 51A intake
+          <button type="button" className="app-btn" style={{ background: C.teal, color: "#fff" }} onClick={() => onDrill("intake")}>
+            + New Initial Report
           </button>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("dashboard")}>
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("dashboard")}>
             My queue →
           </button>
         </div>
@@ -87,7 +87,7 @@ function ScreenerHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOp
               <DrillRow key={c.caseId} case={c} onClick={() => onDrill("intake", c.caseId)} />
             ))}
             {inProgress.length === 0 && (
-              <p style={{ fontSize: 12, color: C.textLight }}>No in-progress intakes — start a new 51A.</p>
+              <p style={{ fontSize: 12, color: C.textLight }}>No in-progress intakes — start a new Initial Report.</p>
             )}
           </div>
         </QueryState>
@@ -128,7 +128,7 @@ function SupervisorHome({ onDrill }: { onDrill: (t: string, id?: string, o?: Nav
             onClick: () => onDrill("screening", undefined, { supervisorScreeningFilter: "all" }),
           },
           {
-            label: "51B returned",
+            label: "Field Report returned",
             val: String(fieldStats.report51b),
             clr: C.green,
             onClick: () => onDrill("screening", undefined, { supervisorScreeningFilter: "report51b" }),
@@ -157,7 +157,7 @@ function SupervisorHome({ onDrill }: { onDrill: (t: string, id?: string, o?: Nav
                 </div>
               </div>
             ))}
-            <button type="button" className="dcf-btn ghost-btn" style={{ marginTop: 10 }} onClick={() => onDrill("review")}>
+            <button type="button" className="app-btn ghost-btn" style={{ marginTop: 10 }} onClick={() => onDrill("review")}>
               Open pending review →
             </button>
           </QueryState>
@@ -174,11 +174,11 @@ function SupervisorHome({ onDrill }: { onDrill: (t: string, id?: string, o?: Nav
                 <div style={{ fontSize: 12, fontWeight: 600 }}>{c.childDisplay}</div>
                 <div style={{ fontSize: 11, color: C.textLight }}>
                   {formatStatus(c.status)}
-                  {c.hasReport51b ? " · 51B available" : ""}
+                  {c.hasReport51b ? " · Field Report available" : ""}
                 </div>
               </div>
             ))}
-            <button type="button" className="dcf-btn ghost-btn" style={{ marginTop: 10 }} onClick={() => onDrill("screening")}>
+            <button type="button" className="app-btn ghost-btn" style={{ marginTop: 10 }} onClick={() => onDrill("screening")}>
               Field screening →
             </button>
           </QueryState>
@@ -208,7 +208,7 @@ function WorkerHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOpti
             onClick: () => onDrill("dashboard", undefined, { workerFilter: "assigned" }),
           },
           {
-            label: "51B submitted",
+            label: "Field Report submitted",
             val: String(stats.reportSubmitted),
             clr: C.green,
             onClick: () => onDrill("dashboard", undefined, { workerFilter: "report_submitted" }),
@@ -230,11 +230,11 @@ function WorkerHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOpti
       <div className="card" style={{ padding: 16 }}>
         <div className="sec-title">Your field work</div>
         <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-          <button type="button" className="dcf-btn" style={{ background: C.purple, color: "#fff" }} onClick={() => onDrill("briefing")}>
+          <button type="button" className="app-btn" style={{ background: C.purple, color: "#fff" }} onClick={() => onDrill("briefing")}>
             Pre-visit briefing
           </button>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("report")}>
-            Field report (51B)
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("report")}>
+            Field Report
           </button>
         </div>
         <QueryState loading={loading} loadingMessage="Loading cases…">
@@ -246,11 +246,11 @@ function WorkerHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOpti
               onClick={() => onDrill("case-record", c.caseId)}
               actions={
                 <>
-                  <button type="button" className="dcf-btn ghost-btn" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); onDrill("briefing", c.caseId); }}>
+                  <button type="button" className="app-btn ghost-btn" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); onDrill("briefing", c.caseId); }}>
                     Briefing
                   </button>
-                  <button type="button" className="dcf-btn ghost-btn" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); onDrill("report", c.caseId); }}>
-                    51B
+                  <button type="button" className="app-btn ghost-btn" style={{ fontSize: 11 }} onClick={(e) => { e.stopPropagation(); onDrill("report", c.caseId); }}>
+                    Field Report
                   </button>
                 </>
               }
@@ -320,16 +320,16 @@ function AdminHome({ onDrill }: { onDrill: (t: string, id?: string, o?: NavOptio
       <div className="card" style={{ padding: 16 }}>
         <div className="sec-title">Administration</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("triage-config")}>
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("triage-config")}>
             Configure triage keywords & thresholds →
           </button>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("risk-framework")}>
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("risk-framework")}>
             Configure statistical risk weights →
           </button>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("dashboard")}>
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("dashboard")}>
             System status dashboard →
           </button>
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => onDrill("audit")}>
+          <button type="button" className="app-btn ghost-btn" onClick={() => onDrill("audit")}>
             Audit logs →
           </button>
         </div>

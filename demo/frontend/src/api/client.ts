@@ -159,7 +159,7 @@ export const api = {
     if (!token) throw new ApiError("Not authenticated", 401, "AUTH_REQUIRED");
     const url = `${API_BASE}/cases/${caseId}/form51a/official?access_token=${encodeURIComponent(token)}`;
     const w = window.open(url, "_blank", "noopener,noreferrer");
-    if (!w) throw new ApiError("Pop-up blocked — allow pop-ups to open the 51A form", 400, "POPUP_BLOCKED");
+    if (!w) throw new ApiError("Pop-up blocked — allow pop-ups to open the Initial Report form", 400, "POPUP_BLOCKED");
   },
 
   getTranscript(caseId: string) {

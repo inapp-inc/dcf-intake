@@ -81,7 +81,7 @@ export function FormSection({
             <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
               <button
                 type="button"
-                className="dcf-btn"
+                className="app-btn"
                 style={{ background: C.teal, color: "#fff", fontSize: 12 }}
                 onClick={onConfirmSection}
               >
@@ -108,7 +108,7 @@ export function FormSection({
                   </label>
                   {f.multiline ? (
                     <textarea
-                      className={`dcf-input dcf-ta${isAi ? " ai" : ""}${isMiss ? " miss" : ""}`}
+                      className={`app-input dcf-ta${isAi ? " ai" : ""}${isMiss ? " miss" : ""}`}
                       value={f.value}
                       placeholder={placeholder}
                       readOnly={readOnly}
@@ -117,7 +117,7 @@ export function FormSection({
                     />
                   ) : (
                     <input
-                      className={`dcf-input${isAi ? " ai" : ""}${isMiss ? " miss" : ""}`}
+                      className={`app-input${isAi ? " ai" : ""}${isMiss ? " miss" : ""}`}
                       value={f.value}
                       placeholder={placeholder}
                       readOnly={readOnly}

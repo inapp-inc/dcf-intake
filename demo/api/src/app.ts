@@ -20,7 +20,7 @@ import auditRouter from "./routes/audit.js";
 import adminRouter from "./routes/admin.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OFFICIAL_FORM_JS = readFileSync(join(__dirname, "../public/51a-form.js"), "utf8");
+const OFFICIAL_FORM_JS = readFileSync(join(__dirname, "../public/initial-report-form.js"), "utf8");
 
 export function createApp() {
   const app = express();
@@ -43,7 +43,7 @@ export function createApp() {
   // Public HTTP routes (no global JWT middleware on this router).
   api.use(healthRouter);
   api.use(authRouter);
-  api.get("/static/51a-form.js", (_req, res) => {
+  api.get("/static/initial-report-form.js", (_req, res) => {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.setHeader(

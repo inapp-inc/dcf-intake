@@ -129,7 +129,7 @@ button {
   box-shadow: 0 1px 4px rgba(27, 48, 84, 0.05);
 }
 
-.dcf-input {
+.app-input {
   width: 100%;
   padding: 8px 11px;
   border-radius: 8px;
@@ -142,24 +142,24 @@ button {
     border-color 0.15s,
     background 0.15s;
 }
-.dcf-input:focus {
+.app-input:focus {
   border-color: #0daaaa;
 }
-.dcf-input.ai {
+.app-input.ai {
   background: #e4f7f6;
   border-color: #0a8a85;
   color: #0a8a85;
 }
-.dcf-input.miss {
+.app-input.miss {
   background: #fef3c7;
   border-color: #c97500;
 }
-.dcf-ta {
+.app-ta {
   resize: vertical;
   min-height: 72px;
 }
 
-.dcf-btn {
+.app-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -174,11 +174,11 @@ button {
     opacity 0.15s,
     transform 0.1s;
 }
-.dcf-btn:hover:not(:disabled) {
+.app-btn:hover:not(:disabled) {
   opacity: 0.86;
   transform: translateY(-1px);
 }
-.dcf-btn:disabled {
+.app-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;

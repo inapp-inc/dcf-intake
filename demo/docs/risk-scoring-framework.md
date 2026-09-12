@@ -1,6 +1,6 @@
 # Statistical risk scoring framework
 
-DCF Intake uses a **rule-based, additive** risk score on a 1–20 scale. It is **statistical** (transparent point weights), not **probabilistic** (no LLM inference or calibrated probabilities).
+Child welfare intake uses a **rule-based, additive** risk score on a 1–20 scale. It is **statistical** (transparent point weights), not **probabilistic** (no LLM inference or calibrated probabilities).
 
 ## When scoring runs
 

@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dcf-ait.demo/schemas/51a-official-field-map.json",
-  "title": "Map intake Form51A → official HTML field names",
-  "description": "Maps internal section.fieldId values to name= attributes in templates/51A-Report-Form.html (fill51A API).",
-  "templatePath": "templates/51A-Report-Form.html",
-  "sourceArtifact": "dcf/51A-Report-Form.html",
+  "$id": "https://intake.demo/schemas/initial-report-official-field-map.json",
+  "title": "Map intake Initial Report → official HTML field names",
+  "description": "Maps internal section.fieldId values to name= attributes in templates/initial-report-form.html.",
+  "templatePath": "templates/initial-report-form.html",
+  "sourceArtifact": "templates/initial-report-form.html",
   "mappings": [
     { "from": { "section": "child", "fieldId": "child_name" }, "to": "child1_name", "transform": "direct" },
     { "from": { "section": "child", "fieldId": "child_addr" }, "to": "child1_address", "transform": "direct" },
@@ -133,7 +133,7 @@
     }
   ],
   "unmappedOfficialFields": {
-    "description": "Completed manually on 51A tab or left blank when not stated on call",
+    "description": "Completed manually on Initial Report tab or left blank when not stated on call",
     "fields": ["signature"]
   }
 }

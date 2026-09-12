@@ -26,13 +26,13 @@ DEFAULT_ESCALATION_THRESHOLD = 2
 
 
 def _db_path() -> str:
-    url = os.environ.get("DATABASE_URL", "sqlite:///data/dcf-ait.db")
+    url = os.environ.get("DATABASE_URL", "sqlite:///data/intake-demo.db")
     if url.startswith("sqlite:"):
         path = url.replace("sqlite:///", "").replace("sqlite:", "")
         if path.startswith("//"):
             path = path[1:]
         return path
-    return "/data/dcf-ait.db"
+    return "/data/intake-demo.db"
 
 
 def load_triage_config() -> dict:

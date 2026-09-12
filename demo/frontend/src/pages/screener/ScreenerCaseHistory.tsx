@@ -28,7 +28,7 @@ export function ScreenerCaseHistory({ onOpenCase }: { onOpenCase: (id: string) =
       <div className="card" style={{ padding: "16px 18px" }}>
         <div className="sec-title">Case History</div>
         <p style={{ fontSize: 11, color: C.textLight, marginBottom: 14, marginTop: -6 }}>
-          Submitted and closed intakes. Open a record to review the 51A (read-only after submit).
+          Submitted and closed intakes. Open a record to review the Initial Report (read-only after submit).
         </p>
         <QueryState
           loading={loading}
@@ -36,7 +36,7 @@ export function ScreenerCaseHistory({ onOpenCase }: { onOpenCase: (id: string) =
           empty={
             !loading && items.length === 0 ? (
               <p style={{ color: C.textLight, fontSize: 13 }}>
-                No submitted cases yet. Complete and submit a 51A from New Intake or My Queue.
+                No submitted cases yet. Complete and submit an Initial Report from New Intake or My Queue.
               </p>
             ) : undefined
           }
@@ -73,7 +73,7 @@ export function ScreenerCaseHistory({ onOpenCase }: { onOpenCase: (id: string) =
                 )}
                 <button
                   type="button"
-                  className="dcf-btn"
+                  className="app-btn"
                   style={{ background: C.navy, color: "#fff", fontSize: 12, padding: "6px 13px" }}
                   onClick={() => onOpenCase(c.caseId)}
                 >

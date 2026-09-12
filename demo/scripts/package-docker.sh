@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Package DCF AIT demo stack for Docker Compose deployment.
-# Produces dcf-ait-demo.zip for demo/scripts/deploy-docker.sh on the target host.
+# Package child welfare intake demo stack for Docker Compose deployment.
+# Produces intake-demo.zip for demo/scripts/deploy-docker.sh on the target host.
 #
 # Includes demo/.env when present (HF token + secrets). Never put real tokens in .env.example.
 set -euo pipefail
 
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="$(cd "${DEMO_DIR}/.." && pwd)"
-ARCHIVE_PATH="${1:-"${ROOT_DIR}/dist/dcf-ait-demo.zip"}"
+ARCHIVE_PATH="${1:-"${ROOT_DIR}/dist/intake-demo.zip"}"
 AI_DEFAULTS="${DEMO_DIR}/config/ai-defaults.env"
 
 # shellcheck disable=SC1091
@@ -43,7 +43,7 @@ fi
 
 STAGING="$(mktemp -d)"
 trap 'rm -rf "${STAGING}"' EXIT
-PKG_ROOT="${STAGING}/dcf-ait-demo"
+PKG_ROOT="${STAGING}/intake-demo"
 mkdir -p "${PKG_ROOT}"
 
 INCLUDE_PATHS=(
@@ -102,18 +102,18 @@ PKG_PORT="$(env_value "${DEMO_DIR}/.env" AIT_HTTP_PORT)"
 PKG_PORT="${PKG_PORT:-4010}"
 
 cat > "${PKG_ROOT}/DEPLOY_README.txt" <<EOF
-DCF AIT Demo Docker package (SQLite + Hugging Face AI)
+Child Welfare Intake Demo Docker package (SQLite + Hugging Face AI)
 version=${VERSION} git=${GIT_SHA} built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 Deploy on the destination host:
-  ./scripts/deploy-docker.sh /path/to/dcf-ait-demo.zip
+  ./scripts/deploy-docker.sh /path/to/intake-demo.zip
 
 Stack: 3 containers — nginx+frontend, api (SQLite), ai-bundle (pipeline worker)
   All AI (ASR + LLM) runs on Hugging Face — no local model RAM.
 
-Public URL (default): https://foundry.inapp.com/dcfintake/
-  APP_BASE_PATH=/dcfintake
-  Host nginx: proxy_pass http://127.0.0.1:${PKG_PORT}/dcfintake/
+Public URL (default): https://foundry.inapp.com/intake/
+  APP_BASE_PATH=/intake
+  Host nginx: proxy_pass http://127.0.0.1:${PKG_PORT}/intake/
 
 This package includes .env with HF_API_TOKEN preconfigured.
 Model defaults: config/ai-defaults.env
@@ -129,7 +129,7 @@ Scripts (in scripts/):
   up.sh                 — local compose up (when already extracted)
 
 After code edits on the VM:
-  cd /var/www/dcf-ait-demo/dcf-ait-demo && ./scripts/redeploy.sh api
+  cd /var/www/intake-demo/intake-demo && ./scripts/redeploy.sh api
   ./scripts/smoke.sh
 
 Data volume: demo-data (SQLite + artifacts only)
@@ -139,7 +139,7 @@ mkdir -p "$(dirname "$ARCHIVE_PATH")"
 rm -f "$ARCHIVE_PATH"
 (
   cd "${STAGING}"
-  zip -rq "$ARCHIVE_PATH" dcf-ait-demo \
+  zip -rq "$ARCHIVE_PATH" intake-demo \
     -x "*/node_modules/*" \
     -x "*/dist/*" \
     -x "*/__pycache__/*"

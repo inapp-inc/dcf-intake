@@ -1,4 +1,4 @@
-/** App URL prefix, e.g. `/dcfintake` (no trailing slash). Empty = site root. */
+/** App URL prefix, e.g. `/intake` (no trailing slash). Empty = site root. */
 export function normalizeAppBase(raw?: string): string {
   const v = (raw ?? import.meta.env.VITE_BASE_PATH ?? "/").trim();
   if (!v || v === "/") return "";
@@ -8,12 +8,12 @@ export function normalizeAppBase(raw?: string): string {
 
 export const APP_BASE = normalizeAppBase(import.meta.env.VITE_BASE_PATH);
 
-/** REST API prefix, e.g. `/dcfintake/api/v1` */
+/** REST API prefix, e.g. `/intake/api/v1` */
 export const API_BASE =
   import.meta.env.VITE_API_BASE_URL?.trim() ||
   (APP_BASE ? `${APP_BASE}/api/v1` : "/api/v1");
 
-/** WebSocket path prefix, e.g. `/dcfintake/ws` */
+/** WebSocket path prefix, e.g. `/intake/ws` */
 export const WS_BASE = APP_BASE ? `${APP_BASE}/ws` : "/ws";
 
 export function wsBaseUrl(): string {

@@ -79,7 +79,7 @@ export function ScreenerDashboard({
             onClick: () => setQueueFilter("emergency"),
           },
           {
-            label: "51A incomplete",
+            label: "Initial Report incomplete",
             val: String(stats.needsCheckpoint),
             sub: "Checkpoint not complete",
             clr: C.amber,
@@ -108,8 +108,8 @@ export function ScreenerDashboard({
           <div className="sec-title" style={{ margin: 0 }}>
             Active Case Queue
           </div>
-          <button type="button" className="dcf-btn" style={{ background: C.teal, color: "#fff" }} onClick={onNewIntake}>
-            + New 51A Intake
+          <button type="button" className="app-btn" style={{ background: C.teal, color: "#fff" }} onClick={onNewIntake}>
+            + New Initial Report
           </button>
         </div>
 
@@ -123,7 +123,7 @@ export function ScreenerDashboard({
             !loading && filtered.length === 0 ? (
               <p style={{ color: C.textLight, fontSize: 13 }}>
                 {items.length === 0
-                  ? "No cases yet. Start a new 51A intake."
+                  ? "No cases yet. Start a new Initial Report."
                   : "No cases match this filter."}
               </p>
             ) : undefined

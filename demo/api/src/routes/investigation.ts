@@ -179,7 +179,7 @@ router.get("/cases/:caseId/report51b/draft", requireRoles("worker", "supervisor"
     const caseId = paramId(req, "caseId");
     const draft = await getLatestDraft(caseId);
     if (!draft) {
-      res.status(404).json({ code: "NOT_FOUND", message: "No 51B draft" });
+      res.status(404).json({ code: "NOT_FOUND", message: "No Field Report draft" });
       return;
     }
     res.json(draft);

@@ -77,12 +77,12 @@ export function applyPayloadToTemplate(
 }
 
 export function officialFormScriptSrc(): string {
-  const base = (process.env.APP_BASE_PATH ?? "/dcfintake").replace(/\/$/, "");
-  return `${base}/api/v1/static/51a-form.js`;
+  const base = (process.env.APP_BASE_PATH ?? "/intake").replace(/\/$/, "");
+  return `${base}/api/v1/static/initial-report-form.js`;
 }
 
 export function officialFormSaveUrl(caseId: string): string {
-  const base = (process.env.APP_BASE_PATH ?? "/dcfintake").replace(/\/$/, "");
+  const base = (process.env.APP_BASE_PATH ?? "/intake").replace(/\/$/, "");
   return `${base}/api/v1/cases/${caseId}/form51a/official/save`;
 }
 
@@ -90,7 +90,7 @@ export function renderOfficial51AHtml(
   fillPayload: Record<string, string | boolean>,
   options?: { draft?: boolean; caseLabel?: string; caseId?: string; saveUrl?: string },
 ): string {
-  const templatePath = join(__dirname, "../../templates/51A-Report-Form.html");
+  const templatePath = join(__dirname, "../../templates/initial-report-form.html");
   let html = readFileSync(templatePath, "utf8");
   html = applyPayloadToTemplate(html, fillPayload);
 

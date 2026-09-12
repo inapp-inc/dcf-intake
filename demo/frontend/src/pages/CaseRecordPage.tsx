@@ -74,8 +74,8 @@ export function CaseRecordPage({
         {caseMeta.emergency && <EmergBadge />}
         {caseMeta.riskScore != null && <RiskBadge score={caseMeta.riskScore} />}
         {canOpen51a && (
-          <button type="button" className="dcf-btn ghost-btn" onClick={() => void api.openOfficialForm(caseId)}>
-            Open 51A
+          <button type="button" className="app-btn ghost-btn" onClick={() => void api.openOfficialForm(caseId)}>
+            Open Initial Report
           </button>
         )}
       </div>
@@ -118,7 +118,7 @@ export function CaseRecordPage({
 
       {(report || caseMeta.status === "report_submitted") && (
         <div className="card" style={{ padding: "15px 17px" }}>
-          <div className="sec-title">51B field report</div>
+          <div className="sec-title">Field report</div>
           {report ? (
             <>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 10 }}>
@@ -141,7 +141,7 @@ export function CaseRecordPage({
               </pre>
             </>
           ) : (
-            <p style={{ fontSize: 12, color: C.textLight }}>51B marked submitted — draft text not available.</p>
+            <p style={{ fontSize: 12, color: C.textLight }}>Field Report marked submitted — draft text not available.</p>
           )}
         </div>
       )}

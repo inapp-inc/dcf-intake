@@ -55,7 +55,7 @@ apply_ai_env_defaults() {
   local defaults_file="$2"
   load_ai_defaults "$defaults_file"
   set_env_value "$env_file" "LLM_PROVIDER" "${LLM_PROVIDER:-huggingface}"
-  set_env_value "$env_file" "HF_MODEL" "${HF_MODEL:-Qwen/Qwen2.5-7B-Instruct}"
+  set_env_value "$env_file" "HF_MODEL" "${HF_MODEL:-meta-llama/Llama-3.1-8B-Instruct}"
   set_env_value "$env_file" "HF_API_BASE" "${HF_API_BASE:-https://router.huggingface.co/v1}"
   set_env_value "$env_file" "LLM_REQUEST_TIMEOUT_MS" "${LLM_REQUEST_TIMEOUT_MS:-600000}"
   set_env_value "$env_file" "HF_ASR_MODEL" "${HF_ASR_MODEL:-openai/whisper-large-v3}"

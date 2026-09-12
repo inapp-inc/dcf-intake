@@ -19,9 +19,9 @@ await runMigrations();
 const { createApp } = await import("../dist/app.js");
 
 const CREDENTIALS: Record<string, [string, string]> = {
-  screener: ["screener.demo", "Screener51a!"],
-  supervisor: ["supervisor.demo", "Supervisor51a!"],
-  worker: ["worker.demo", "Worker51b!"],
+  screener: ["screener.demo", "ScreenerInit!"],
+  supervisor: ["supervisor.demo", "SupervisorInit!"],
+  worker: ["worker.demo", "WorkerField!"],
   admin: ["admin.demo", "AdminDemo!"],
 };
 
@@ -95,7 +95,7 @@ if (noToken.status !== 401) {
 
 const screenerLogin = await request(base, "POST", "/auth/login", {
   username: "screener.demo",
-  password: "Screener51a!",
+  password: "ScreenerInit!",
 });
 const screenerToken = screenerLogin.json.accessToken as string;
 const casesList = await request(base, "GET", "/cases", undefined, { token: screenerToken });

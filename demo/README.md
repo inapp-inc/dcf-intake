@@ -1,4 +1,4 @@
-# DCF AIT — Demo stack
+# Child Welfare Intake — Demo stack
 
 Independent copy of the platform under `demo/` for a **simpler deployment**:
 
@@ -27,20 +27,20 @@ cp .env.example .env
 cd demo
 cp .env.example .env   # only if .env missing; set HF_API_TOKEN
 ./scripts/package-docker.sh
-# → ../dist/dcf-ait-demo.zip (includes demo/.env with secrets)
+# → ../dist/intake-demo.zip (includes demo/.env with secrets)
 ```
 
 **Target VM:**
 
 ```bash
-./scripts/deploy-docker.sh /path/to/dcf-ait-demo.zip
+./scripts/deploy-docker.sh /path/to/intake-demo.zip
 # Uses packaged .env — no manual HF token setup when built from a machine with demo/.env
 ```
 
 Wrappers: `package-demo.sh` → `package-docker.sh`, `deploy-demo.sh` → `deploy-docker.sh`.
 
-- Local UI: `http://127.0.0.1:4010/dcfintake/`
-- Foundry: `deploy-docker.sh` installs `/etc/nginx/routes/dcfintake.conf` (same as `create-nginx-site.sh dcfintake 4010`). Use `--skip-nginx` or `INSTALL_HOST_NGINX=0` to skip. Manual: `./scripts/install-host-nginx.sh`.
+- Local UI: `http://127.0.0.1:4010/intake/`
+- Foundry: `deploy-docker.sh` installs `/etc/nginx/routes/intake.conf` (same as `create-nginx-site.sh intake 4010`). Use `--skip-nginx` or `INSTALL_HOST_NGINX=0` to skip. Manual: `./scripts/install-host-nginx.sh`.
 
 ## Frontend architecture (demo)
 
@@ -71,9 +71,9 @@ Demo accounts (click **Demo credentials** on the login form to fill):
 
 | Role | Username | Password |
 |------|----------|----------|
-| Screener | `screener.demo` | `Screener51a!` |
-| Supervisor | `supervisor.demo` | `Supervisor51a!` |
-| Worker | `worker.demo` | `Worker51b!` |
+| Screener | `screener.demo` | `ScreenerInit!` |
+| Supervisor | `supervisor.demo` | `SupervisorInit!` |
+| Worker | `worker.demo` | `WorkerField!` |
 | Admin | `admin.demo` | `AdminDemo!` |
 
 ## AI (Hugging Face — all cloud, zero local model RAM)
@@ -83,7 +83,7 @@ The demo stack uses **Hugging Face Inference** for **all** AI work:
 | Task | Model (default) | Where it runs |
 |------|-----------------|---------------|
 | Transcription (ASR) | `openai/whisper-large-v3` | HF Inference API |
-| NLP, triage, documents, assistant | `Qwen/Qwen2.5-7B-Instruct` | HF chat completions |
+| NLP, triage, documents, assistant | `meta-llama/Llama-3.1-8B-Instruct` | HF chat completions |
 | Risk score | **Statistical rules** (`statistical-v1`) | Not LLM — see `docs/risk-scoring-framework.md` |
 
 | Variable | Default | Purpose |
@@ -93,7 +93,7 @@ The demo stack uses **Hugging Face Inference** for **all** AI work:
 | `HF_ASR_API_URL` | *(auto)* | Override with a dedicated Inference Endpoint URL if needed |
 | `ASR_REQUEST_TIMEOUT_MS` | `600000` | Long timeout for large audio files |
 | `LLM_PROVIDER` | `huggingface` | Set `ollama` only if you run a local Ollama elsewhere |
-| `HF_MODEL` | `Qwen/Qwen2.5-7B-Instruct` | Chat model for NLP/assistant (no Llama license gate) |
+| `HF_MODEL` | `meta-llama/Llama-3.1-8B-Instruct` | Chat model for NLP/assistant |
 | `HF_API_BASE` | `https://router.huggingface.co/v1` | OpenAI-compatible LLM endpoint |
 | `LLM_REQUEST_TIMEOUT_MS` | `600000` | Long timeout for slow/cold models |
 
@@ -105,7 +105,7 @@ The **ai-bundle** container is now a lightweight pipeline worker (SQLite job pol
 
 | Risk | Mitigation in this demo |
 |------|-------------------------|
-| **PII leaves your VM** | Audio + transcripts + form fields go to HF cloud for ASR/LLM. Acceptable for demo only — not for production DCF data without a BAA/DPA. |
+| **PII leaves your VM** | Audio + transcripts + form fields go to HF cloud for ASR/LLM. Acceptable for demo only — not for production agency data without a BAA/DPA. |
 | **HF token exposure** | Token lives in `demo/.env` (gitignored). Never commit real tokens to `.env.example`. Deploy zip may include `.env` when packaging from a machine that has it. |
 | **Token scope** | Use a fine-grained token with **Inference Providers** only — not repo write/admin. |
 | **Provider logging** | HF and routed providers (Fal, Together, etc.) may retain request logs per their policies. |
@@ -128,7 +128,7 @@ The demo frontend shows **loading spinners** on all data-heavy pages and uses **
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/package-docker.sh` | Create `dist/dcf-ait-demo.zip` (requires `demo/.env` with `HF_API_TOKEN`) |
+| `scripts/package-docker.sh` | Create `dist/intake-demo.zip` (requires `demo/.env` with `HF_API_TOKEN`) |
 | `scripts/deploy-docker.sh` | Install from zip on VM (uses packaged `.env`) |
 | `scripts/up.sh` | `docker compose up` (requires `demo/.env` with HF token) |
 | `scripts/smoke.sh` | Health + auth checks |
@@ -142,7 +142,7 @@ The demo frontend shows **loading spinners** on all data-heavy pages and uses **
 | `openspec/changes/demo-enhancements-2026-05/` | Change spec for this demo implementation |
 | `openspec/specs/` | Normative behavior (8 domains) |
 | `docs/risk-scoring-framework.md` | Statistical risk weights and formula |
-| `docs/screening-51a-process.md` | Mermaid: screening & 51A flow |
+| `docs/screening-initial-report-process.md` | Mermaid: screening & Initial Report flow |
 | `Docs/FSD-DEMO.md` | Functional requirements |
 | `Docs/TRACEABILITY.md` | PRD → API → OpenSpec map |
 | `openapi.yaml` (repo root) | REST contract |

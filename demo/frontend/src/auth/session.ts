@@ -1,4 +1,4 @@
-const STORAGE_KEY = "dcf-ait-token";
+const STORAGE_KEY = "intake-demo-token";
 
 type SessionListener = () => void;
 const listeners = new Set<SessionListener>();

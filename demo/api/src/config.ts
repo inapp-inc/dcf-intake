@@ -14,7 +14,7 @@ export const config = {
     ),
     huggingface: {
       apiBase: process.env.HF_API_BASE ?? "https://router.huggingface.co/v1",
-      model: process.env.HF_MODEL ?? "Qwen/Qwen2.5-7B-Instruct",
+      model: process.env.HF_MODEL ?? "meta-llama/Llama-3.1-8B-Instruct",
       apiToken: process.env.HF_API_TOKEN ?? process.env.HUGGINGFACE_API_KEY ?? "",
     },
     ollama: {

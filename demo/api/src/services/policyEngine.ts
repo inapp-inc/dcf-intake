@@ -14,7 +14,7 @@ export function assertHumanAction(action: string, actorRole: UserRole): void {
     throw new PolicyError(`Automated action '${action}' is not permitted`);
   }
   if (actorRole === "admin") {
-    throw new PolicyError("DCF Admin cannot perform case determination actions");
+    throw new PolicyError("System Admin cannot perform case determination actions");
   }
 }
 

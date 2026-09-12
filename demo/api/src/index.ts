@@ -20,7 +20,7 @@ async function main() {
   server.keepAliveTimeout = 3_700_000;
   attachCaseWebSocket(server);
   server.listen(config.port, () => {
-    console.log(`DCF AIT demo API listening on :${config.port} (SQLite, WS /ws/cases/:caseId)`);
+    console.log(`Child welfare intake demo API listening on :${config.port} (SQLite, WS /ws/cases/:caseId)`);
   });
 }
 

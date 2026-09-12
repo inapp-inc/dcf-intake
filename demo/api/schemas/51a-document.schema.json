@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dcf-ait.demo/schemas/51a-document.schema.json",
+  "$id": "https://intake.demo/schemas/initial-report-document.schema.json",
   "title": "Form51ADocument",
-  "description": "Structured data model for the official MA DCF 51A report form (templates/51A-Report-Form.html).",
+  "description": "Structured data model for the agency Initial Report form (templates/initial-report-form.html).",
   "type": "object",
   "required": ["caseId", "reportDate", "children", "parentGuardian1", "parentGuardian2", "reporter", "narrative"],
   "properties": {

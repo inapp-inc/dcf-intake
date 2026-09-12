@@ -134,7 +134,7 @@ export function AudioUpload({
       </div>
       <button
         type="button"
-        className="dcf-btn"
+        className="app-btn"
         style={{ background: C.teal, color: "#fff" }}
         onClick={(e) => {
           e.stopPropagation();

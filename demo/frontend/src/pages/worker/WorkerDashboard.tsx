@@ -74,7 +74,7 @@ export function WorkerDashboard({
           {
             label: "Assigned cases",
             val: String(stats.assigned),
-            sub: "51B not yet submitted",
+            sub: "Field Report not yet submitted",
             clr: C.navy,
             onClick: () => setQueueFilter("assigned"),
           },
@@ -85,7 +85,7 @@ export function WorkerDashboard({
             onClick: () => setQueueFilter("emergency"),
           },
           {
-            label: "51B submitted",
+            label: "Field Report submitted",
             val: String(stats.reportSubmitted),
             sub: "Awaiting supervisor review",
             clr: C.green,
@@ -144,7 +144,7 @@ export function WorkerDashboard({
                 {onViewCase && (
                 <button
                   type="button"
-                  className="dcf-btn ghost-btn"
+                  className="app-btn ghost-btn"
                   style={{ fontSize: 12 }}
                   onClick={() => onViewCase(c.caseId)}
                 >
@@ -153,7 +153,7 @@ export function WorkerDashboard({
               )}
               <button
                 type="button"
-                className="dcf-btn"
+                className="app-btn"
                 style={{ background: C.teal, color: "#fff", fontSize: 12 }}
                 onClick={() => onBriefing(c.caseId)}
               >
@@ -161,7 +161,7 @@ export function WorkerDashboard({
               </button>
               <button
                 type="button"
-                className="dcf-btn"
+                className="app-btn"
                 style={{ background: C.navy, color: "#fff", fontSize: 12 }}
                 onClick={() => onReport(c.caseId)}
               >

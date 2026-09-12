@@ -59,7 +59,7 @@ router.get("/cases", requireRoles("screener", "supervisor", "worker", "admin"), 
 router.post("/cases", requireRoles("screener"), async (req, res, next) => {
   try {
     const id = uuidv4();
-    const externalId = `51A-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const externalId = `IR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     const emergency = Boolean(req.body?.emergencyHint);
     await query(
       `INSERT INTO cases (id, external_id, emergency, area_office)

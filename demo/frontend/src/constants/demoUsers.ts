@@ -11,19 +11,19 @@ export type DemoCredential = {
 export const DEMO_CREDENTIALS: Record<UserRole, DemoCredential> = {
   screener: {
     username: "screener.demo",
-    password: "Screener51a!",
+    password: "ScreenerInit!",
     displayName: "Jamie Rivera",
     areaOffice: "Springfield",
   },
   supervisor: {
     username: "supervisor.demo",
-    password: "Supervisor51a!",
+    password: "SupervisorInit!",
     displayName: "Alex Morgan",
     areaOffice: "Springfield",
   },
   worker: {
     username: "worker.demo",
-    password: "Worker51b!",
+    password: "WorkerField!",
     displayName: "Sam Okonkwo",
     areaOffice: "Springfield",
   },
@@ -31,6 +31,6 @@ export const DEMO_CREDENTIALS: Record<UserRole, DemoCredential> = {
     username: "admin.demo",
     password: "AdminDemo!",
     displayName: "Taylor Chen",
-    areaOffice: "EOHHS IT",
+    areaOffice: "Central Office",
   },
 };

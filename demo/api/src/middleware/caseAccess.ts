@@ -17,7 +17,7 @@ export class CaseAccessError extends Error {
 
 export async function assertCaseAccess(caseId: string, role: UserRole): Promise<void> {
   if (role === "admin") {
-    throw new CaseAccessError("DCF Admin cannot access case narrative data", 403, "FORBIDDEN");
+    throw new CaseAccessError("System Admin cannot access case narrative data", 403, "FORBIDDEN");
   }
 
   const { rows } = await query<{ status: string }>("SELECT status FROM cases WHERE id = $1", [caseId]);

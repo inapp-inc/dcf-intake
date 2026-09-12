@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-APP_BASE_PATH="${APP_BASE_PATH:-/dcfintake}"
+APP_BASE_PATH="${APP_BASE_PATH:-/intake}"
 APP_BASE_PATH="${APP_BASE_PATH%/}"
 
 if [ -z "${APP_BASE_PATH}" ] || [ "${APP_BASE_PATH}" = "/" ]; then

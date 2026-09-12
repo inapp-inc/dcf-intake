@@ -256,7 +256,7 @@ def clean_transcript_text(segments: list[dict]) -> str:
 
 
 def field_memo_transcript_text(segments: list[dict]) -> str:
-    """Plain text for 51B field notes — no intake speaker labels."""
+    """Plain text for Field Report notes — no intake speaker labels."""
     lines: list[str] = []
     for seg in segments:
         text = re.sub(r"\s+", " ", str(seg.get("text", ""))).strip()
@@ -335,7 +335,7 @@ def run_transcribe(case_id: str, bus: RedisBus, payload: dict) -> None:
     db.add_assistant_message(
         case_id,
         "success",
-        "I've transcribed the audio. Review teal-highlighted AI fields and confirm each before completing the 51A checkpoint.",
+        "I've transcribed the audio. Review teal-highlighted AI fields and confirm each before completing the Initial Report checkpoint.",
         None,
     )
     bus.enqueue(case_id, "clean", {})
@@ -355,7 +355,7 @@ def run_nlp(case_id: str, bus: RedisBus, payload: dict) -> None:
     db.add_assistant_message(
         case_id,
         "info",
-        "Extracting 51A fields from the transcript with the intake model…",
+        "Extracting Initial Report fields from the transcript with the intake model…",
         None,
     )
     bus.publish_case_event(case_id, {"type": "assistant.refresh"})
@@ -372,7 +372,7 @@ def run_nlp(case_id: str, bus: RedisBus, payload: dict) -> None:
 
     llm = LlmClient()
     system = (
-        "You extract structured Massachusetts DCF 51A child-welfare intake fields from hotline call transcripts. "
+        "You extract structured child-welfare Initial Report intake fields from hotline call transcripts. "
         "Respond with JSON only, no markdown. "
         'Schema: {"fields":[{"sectionId":"child|incident|reporter|household|filing",'
         '"fieldId":"<id>","value":"<text>","confidence":0.0-1.0}]} '
@@ -581,7 +581,7 @@ def run_risk(case_id: str, bus: RedisBus, payload: dict) -> None:
 
 
 def run_field_memo_transcribe(case_id: str, bus: RedisBus, payload: dict) -> None:
-    """Transcribe a 51B field voice memo and append to cases.field_notes (no 51A pipeline)."""
+    """Transcribe a Field Report voice memo and append to cases.field_notes (no intake pipeline)."""
     db.set_pipeline_stage(case_id, "field_memo", "running")
     bus.publish_case_event(case_id, {"type": "pipeline.stage", "stage": "field_memo", "status": "running"})
 
@@ -703,7 +703,7 @@ def run_documents(case_id: str, bus: RedisBus, _: dict) -> None:
         logger.warning("Documents LLM returned unparseable JSON for %s: %s", case_id, e)
         fallback = {
             "summary": "Supervisor summary unavailable — LLM output could not be parsed.",
-            "sections": [{"title": "Intake", "body": "Review transcript and 51A fields manually.", "evidence": []}],
+            "sections": [{"title": "Intake", "body": "Review transcript and Initial Report fields manually.", "evidence": []}],
         }
         db.save_document(case_id, "supervisor_summary", fallback, "fallback", False)
         minio_store.put_json(f"documents/{case_id}/supervisor-summary.json", fallback)

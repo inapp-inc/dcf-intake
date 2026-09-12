@@ -83,7 +83,7 @@ export function AdminRiskFramework() {
               <p style={{ color: C.coral, fontSize: 13, marginBottom: 10 }}>
                 {error ?? "Could not load risk framework."}
               </p>
-              <button type="button" className="dcf-btn ghost-btn" onClick={() => void reload()}>
+              <button type="button" className="app-btn ghost-btn" onClick={() => void reload()}>
                 Retry
               </button>
             </div>
@@ -179,10 +179,10 @@ export function AdminRiskFramework() {
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" className="dcf-btn primary-btn" disabled={saving} onClick={() => void save()}>
+              <button type="button" className="app-btn primary-btn" disabled={saving} onClick={() => void save()}>
                 {saving ? "Saving…" : "Save framework"}
               </button>
-              <button type="button" className="dcf-btn ghost-btn" onClick={resetDefaults}>
+              <button type="button" className="app-btn ghost-btn" onClick={resetDefaults}>
                 Reset to defaults
               </button>
             </div>

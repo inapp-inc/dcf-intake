@@ -2,7 +2,7 @@ import { C } from "../theme/tokens";
 import type { UserRole } from "../api/types";
 
 export const ROLES = [
-  { id: "screener" as const, label: "Screener", desc: "51A Intake & Hotline", icon: "🎧", clr: C.teal, bg: C.tealPale },
+  { id: "screener" as const, label: "Screener", desc: "Initial Report Intake & Hotline", icon: "🎧", clr: C.teal, bg: C.tealPale },
   {
     id: "supervisor" as const,
     label: "Supervisor",
@@ -14,14 +14,14 @@ export const ROLES = [
   {
     id: "worker" as const,
     label: "Social Worker",
-    desc: "51B Field Investigator",
+    desc: "Field Investigation",
     icon: "🏡",
     clr: C.purple,
     bg: C.purplePale,
   },
   {
     id: "admin" as const,
-    label: "DCF Admin",
+    label: "System Admin",
     desc: "Triage config & system governance",
     icon: "⚙️",
     clr: "#374151",
@@ -33,7 +33,7 @@ export const NAV: Record<UserRole, { id: string; label: string; icon: string; ba
   screener: [
     { id: "home", label: "Home", icon: "⌂" },
     { id: "dashboard", label: "My Queue", icon: "⊞" },
-    { id: "intake", label: "New 51A Intake", icon: "＋" },
+    { id: "intake", label: "New Initial Report", icon: "＋" },
     { id: "history", label: "Case History", icon: "◷" },
   ],
   supervisor: [
@@ -47,7 +47,7 @@ export const NAV: Record<UserRole, { id: string; label: string; icon: string; ba
   worker: [
     { id: "home", label: "Home", icon: "⌂" },
     { id: "dashboard", label: "My Cases", icon: "⊞" },
-    { id: "briefing", label: "51B Briefing", icon: "📑" },
+    { id: "briefing", label: "Field Briefing", icon: "📑" },
     { id: "report", label: "Field Report", icon: "✏" },
   ],
   admin: [
@@ -64,7 +64,7 @@ export const NAV: Record<UserRole, { id: string; label: string; icon: string; ba
 export const PAGE_LABELS: Record<string, string> = {
   home: "Home",
   dashboard: "Dashboard",
-  intake: "New 51A Intake",
+  intake: "New Initial Report",
   history: "Case History",
   review: "Pending Review",
   screening: "Field Screening",
@@ -73,7 +73,7 @@ export const PAGE_LABELS: Record<string, string> = {
   "case-record": "Case Record",
   "triage-config": "Triage Keywords",
   "risk-framework": "Risk Scoring",
-  briefing: "51B Pre-Visit Briefing",
+  briefing: "Field Pre-Visit Briefing",
   report: "Field Report",
   users: "User Management",
   models: "AI Governance",

@@ -13,7 +13,7 @@ export function Report51bStatusChip({
   const bg = step === "submitted" ? C.greenPale : step === "draft" ? C.tealPale : C.bg;
   return (
     <Chip color={color} bg={bg}>
-      51B: {report51bWorkflowLabel(step)}
+      Field Report: {report51bWorkflowLabel(step)}
     </Chip>
   );
 }

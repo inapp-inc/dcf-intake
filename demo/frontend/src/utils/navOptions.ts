@@ -23,7 +23,7 @@ export type NavOptions = {
 export const SCREENER_FILTER_OPTIONS: { id: ScreenerQueueFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "in_progress", label: "In progress" },
-  { id: "needs_checkpoint", label: "51A incomplete" },
+  { id: "needs_checkpoint", label: "Initial Report incomplete" },
   { id: "pending_review", label: "Pending review" },
   { id: "emergency", label: "Emergency" },
 ];
@@ -31,15 +31,15 @@ export const SCREENER_FILTER_OPTIONS: { id: ScreenerQueueFilter; label: string }
 export const WORKER_FILTER_OPTIONS: { id: WorkerQueueFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "assigned", label: "Assigned" },
-  { id: "report_submitted", label: "51B submitted" },
+  { id: "report_submitted", label: "Field Report submitted" },
   { id: "emergency", label: "Emergency" },
 ];
 
 export const SUPERVISOR_SCREENING_FILTER_OPTIONS: { id: SupervisorScreeningFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "assigned", label: "With field worker" },
-  { id: "report_submitted", label: "51B submitted" },
-  { id: "report51b", label: "51B returned" },
+  { id: "report_submitted", label: "Field Report submitted" },
+  { id: "report51b", label: "Field Report returned" },
   { id: "emergency", label: "Emergency" },
 ];
 

@@ -31,7 +31,7 @@ export function SupervisorAuditHub({ onOpenCase }: { onOpenCase: (caseId: string
           empty={
             !loading && queue.length === 0 ? (
               <p style={{ color: C.textLight, fontSize: 13 }}>
-                No cases in queue. Submit and route a 51A as screener first.
+                No cases in queue. Submit and route an Initial Report as screener first.
               </p>
             ) : undefined
           }
@@ -55,7 +55,7 @@ export function SupervisorAuditHub({ onOpenCase }: { onOpenCase: (caseId: string
                 </div>
                 <button
                   type="button"
-                  className="dcf-btn"
+                  className="app-btn"
                   style={{ background: C.navy, color: "#fff", fontSize: 12 }}
                   onClick={() => onOpenCase(c.caseId)}
                 >

@@ -170,7 +170,7 @@ export function WorkerBriefing({ caseId, onBack }: { caseId: string; onBack: () 
         <div className="card" style={{ padding: "15px 17px" }}>
           <div className="sec-title">Risk Factors</div>
           {briefing.riskFactors.length === 0 ? (
-            <p style={{ fontSize: 12, color: C.textLight }}>No risk factors listed — review the 51A and risk score.</p>
+            <p style={{ fontSize: 12, color: C.textLight }}>No risk factors listed — review the Initial Report and risk score.</p>
           ) : (
             briefing.riskFactors.map((f, i) => (
               <div key={i} style={{ fontSize: 12, color: C.textMid, display: "flex", gap: 6, marginBottom: 7 }}>

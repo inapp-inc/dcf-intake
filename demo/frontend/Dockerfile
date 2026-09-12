@@ -4,8 +4,8 @@ WORKDIR /app
 # Vite + esbuild native bindings on Alpine
 RUN apk add --no-cache libc6-compat
 
-ARG VITE_BASE_PATH=/dcfintake/
-ARG VITE_API_BASE_URL=/dcfintake/api/v1
+ARG VITE_BASE_PATH=/intake/
+ARG VITE_API_BASE_URL=/intake/api/v1
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
@@ -19,7 +19,7 @@ COPY nginx.conf.template ./
 RUN npm run build
 
 FROM nginx:1.27-alpine
-ARG APP_BASE_PATH=/dcfintake
+ARG APP_BASE_PATH=/intake
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY --from=build /app/nginx.conf.template /tmp/nginx.conf.template
 RUN APP_BASE="${APP_BASE_PATH%/}" \

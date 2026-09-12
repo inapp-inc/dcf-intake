@@ -100,7 +100,7 @@ export function SupervisorDashboard({
             {
               label: "Field screening",
               val: "View",
-              sub: "Track 51B progress",
+              sub: "Track Field Report progress",
               clr: C.navy,
               onClick: () => onDrill?.("screening"),
             },
@@ -109,7 +109,7 @@ export function SupervisorDashboard({
         <div className="card" style={{ padding: "16px 18px" }}>
           <div className="sec-title">Team Overview</div>
           <p style={{ fontSize: 12, color: C.textLight, marginBottom: 14, marginTop: -6 }}>
-            Springfield area office — use <strong>Pending Review</strong> to approve or screen out submitted 51As.
+            Springfield area office — use <strong>Pending Review</strong> to approve or screen out submitted Initial Reports.
           </p>
           <QueryState loading={loading} loadingMessage="Loading team metrics…" minHeight={80}>
             {queue.length === 0 ? (
@@ -248,7 +248,7 @@ export function SupervisorDashboard({
           {
             label: "Field screening",
             val: "View",
-            sub: "51B tracking",
+            sub: "Field Report tracking",
             clr: C.navy,
             onClick: () => onDrill?.("screening"),
           },
@@ -259,7 +259,7 @@ export function SupervisorDashboard({
           Showing emergency cases only.{" "}
           <button
             type="button"
-            className="dcf-btn ghost-btn"
+            className="app-btn ghost-btn"
             style={{ fontSize: 11, marginLeft: 8 }}
             onClick={() => onDrill?.("review", undefined, { supervisorEmergencyOnly: false })}
           >
@@ -414,7 +414,7 @@ export function SupervisorDashboard({
                       </div>
                     </div>
                     <textarea
-                      className="dcf-input dcf-ta"
+                      className="app-input app-ta"
                       style={{ marginTop: 13, marginBottom: 10, minHeight: 56 }}
                       placeholder="Rationale (optional for approve)…"
                       value={rationale[c.caseId] ?? ""}
@@ -423,7 +423,7 @@ export function SupervisorDashboard({
                     <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                       <button
                         type="button"
-                        className="dcf-btn"
+                        className="app-btn"
                         style={{ background: C.green, color: "#fff" }}
                         disabled={decidingId === c.caseId}
                         onClick={() => void decide(c.caseId, "approve_screen_in")}
@@ -433,7 +433,7 @@ export function SupervisorDashboard({
                       </button>
                       <button
                         type="button"
-                        className="dcf-btn"
+                        className="app-btn"
                         style={{ background: C.navy, color: "#fff" }}
                         disabled={decidingId === c.caseId}
                         onClick={() => void decide(c.caseId, "screen_out")}
@@ -442,7 +442,7 @@ export function SupervisorDashboard({
                       </button>
                       <button
                         type="button"
-                        className="dcf-btn ghost-btn"
+                        className="app-btn ghost-btn"
                         disabled={decidingId === c.caseId}
                         onClick={() => void decide(c.caseId, "request_clarification")}
                       >
@@ -451,7 +451,7 @@ export function SupervisorDashboard({
                       {onViewCase && (
                         <button
                           type="button"
-                          className="dcf-btn"
+                          className="app-btn"
                           style={{ background: C.navy, color: "#fff" }}
                           onClick={() => onViewCase(c.caseId)}
                         >
@@ -459,16 +459,16 @@ export function SupervisorDashboard({
                         </button>
                       )}
                       {onAudit && (
-                        <button type="button" className="dcf-btn ghost-btn" onClick={() => onAudit(c.caseId)}>
+                        <button type="button" className="app-btn ghost-btn" onClick={() => onAudit(c.caseId)}>
                           Audit trail
                         </button>
                       )}
                       <button
                         type="button"
-                        className="dcf-btn ghost-btn"
+                        className="app-btn ghost-btn"
                         onClick={() => void api.openOfficialForm(c.caseId)}
                       >
-                        View 51A
+                        View Initial Report
                       </button>
                     </div>
                   </div>

@@ -31,7 +31,7 @@ export function FormPopulatingCard({
         <LoadingSpinner size={28} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.textDark, fontFamily: "'Fraunces', serif" }}>
-            Building your 51A from the call
+            Building your Initial Report from the call
           </div>
           <p style={{ fontSize: 12, color: C.teal, marginTop: 6, marginBottom: 0 }} className="pulsing">
             {stageLabel}

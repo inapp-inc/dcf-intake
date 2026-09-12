@@ -20,7 +20,7 @@ export function FilterChips<T extends string>({
           <button
             key={opt.id}
             type="button"
-            className="dcf-btn"
+            className="app-btn"
             style={{
               fontSize: 12,
               padding: "6px 12px",

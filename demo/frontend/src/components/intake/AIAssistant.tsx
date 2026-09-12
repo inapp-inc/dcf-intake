@@ -143,7 +143,7 @@ export function AIAssistant({
               {m.fieldJump && onJump && (
                 <button
                   type="button"
-                  className="dcf-btn"
+                  className="app-btn"
                   style={{
                     marginTop: 7,
                     fontSize: 10,
@@ -165,7 +165,7 @@ export function AIAssistant({
       <div style={{ padding: "11px 14px", borderTop: `1px solid ${C.border}`, background: C.white, flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 7 }}>
           <input
-            className="dcf-input"
+            className="app-input"
             style={{ flex: 1, fontSize: 12 }}
             placeholder="Ask me anything about this case…"
             value={input}
@@ -175,7 +175,7 @@ export function AIAssistant({
           />
           <button
             type="button"
-            className="dcf-btn"
+            className="app-btn"
             style={{ background: C.teal, color: "#fff", padding: "7px 13px" }}
             disabled={sending}
             onClick={onSend}

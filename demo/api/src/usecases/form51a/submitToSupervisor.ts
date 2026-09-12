@@ -3,7 +3,7 @@ import * as formRepo from "../../repositories/form51aRepository.js";
 export async function submitCaseToSupervisor(caseId: string): Promise<{ status: string; message: string }> {
   const checkpoint = await formRepo.getCheckpointStatus(caseId);
   if (checkpoint !== "complete") {
-    throw Object.assign(new Error("51A checkpoint must be complete before submit"), {
+    throw Object.assign(new Error("Initial Report checkpoint must be complete before submit"), {
       status: 409,
       code: "FORM_51A_INCOMPLETE",
       checkpointStatus: checkpoint,

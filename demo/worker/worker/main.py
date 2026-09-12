@@ -17,7 +17,7 @@ logger = logging.getLogger("ai-worker")
 
 def main() -> None:
     bus = RedisBus()
-    logger.info("DCF AIT demo ai-worker started — SQLite queue, artifacts=%s", config.ARTIFACT_DIR)
+    logger.info("Child welfare intake demo ai-worker started — SQLite queue, artifacts=%s", config.ARTIFACT_DIR)
     while True:
         job = bus.blocking_pop(timeout=5)
         if not job:

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Deploy DCF AIT demo stack from package-docker.sh archive.
+# Deploy child welfare intake demo stack from package-docker.sh archive.
 # SQLite + filesystem artifacts; pipeline worker in ai-bundle; all AI on Hugging Face.
 set -euo pipefail
 
 ARCHIVE_PATH=""
-APP_NAME="${APP_NAME:-dcf-ait-demo}"
-DEPLOY_ROOT="${DEPLOY_ROOT:-/var/www/dcf-ait-demo}"
+APP_NAME="${APP_NAME:-intake-demo}"
+DEPLOY_ROOT="${DEPLOY_ROOT:-/var/www/intake-demo}"
 ENV_FILE_OVERRIDE="${ENV_FILE:-}"
 RUN_SMOKE="${RUN_SMOKE:-1}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 INSTALL_HOST_NGINX="${INSTALL_HOST_NGINX:-1}"
 
 AIT_HTTP_PORT="${AIT_HTTP_PORT:-4010}"
-APP_BASE_PATH="${APP_BASE_PATH:-/dcfintake}"
+APP_BASE_PATH="${APP_BASE_PATH:-/intake}"
 PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-https://foundry.inapp.com}"
 VITE_BASE_PATH="${VITE_BASE_PATH:-${APP_BASE_PATH}/}"
 VITE_API_BASE_URL="${VITE_API_BASE_URL:-${APP_BASE_PATH}/api/v1}"
@@ -20,22 +20,22 @@ HF_ASR_API_URL="${HF_ASR_API_URL:-}"
 
 usage() {
   cat <<'EOF'
-Usage: deploy-docker.sh [options] /path/to/dcf-ait-demo.zip
+Usage: deploy-docker.sh [options] /path/to/intake-demo.zip
 
 Options:
   --skip-build          Skip docker compose build
   --no-smoke            Skip post-deploy smoke.sh
   --skip-nginx          Skip host nginx route install (/etc/nginx/routes)
-  --install-dir DIR     Extract parent directory (default: /var/www/dcf-ait-demo)
+  --install-dir DIR     Extract parent directory (default: /var/www/intake-demo)
   --env-file PATH       Use/write this .env instead of ./.env in install tree
 
 Environment (optional overrides — packaged .env is used when present):
   AIT_HTTP_PORT         Host port for app nginx HTTP (default 4010)
-  APP_BASE_PATH         URL prefix (default /dcfintake)
+  APP_BASE_PATH         URL prefix (default /intake)
   PUBLIC_ORIGIN         https://foundry.inapp.com
   HF_API_TOKEN          Override Hugging Face token
   LLM_PROVIDER          huggingface (default)
-  HF_MODEL              LLM model (default Qwen/Qwen2.5-7B-Instruct)
+  HF_MODEL              LLM model (default meta-llama/Llama-3.1-8B-Instruct)
   HF_ASR_MODEL          ASR model (default openai/whisper-large-v3)
   INSTALL_HOST_NGINX    1 (default) — write /etc/nginx/routes/<route>.conf
 
@@ -97,7 +97,7 @@ choose_http_port() {
 mkdir -p "$DEPLOY_ROOT"
 unzip -oq "$ARCHIVE_PATH" -d "$DEPLOY_ROOT"
 
-ROOT="${DEPLOY_ROOT}/dcf-ait-demo"
+ROOT="${DEPLOY_ROOT}/intake-demo"
 if [[ ! -f "${ROOT}/docker-compose.yml" ]]; then
   ROOT="${DEPLOY_ROOT}"
 fi

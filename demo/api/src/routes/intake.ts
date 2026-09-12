@@ -312,7 +312,7 @@ router.post("/cases/:caseId/assistant-messages", requireRoles("screener"), requi
     let reply: string;
     try {
       reply = await llmChat(
-        "You are the DCF AIT intake assistant. Be concise. Answer from the transcript and form fields provided. Reference form completeness and triage when relevant. No legal determinations.",
+        "You are the child welfare intake assistant. Be concise. Answer from the transcript and form fields provided. Reference form completeness and triage when relevant. No legal determinations.",
         `${context}\n\nUser question: ${userMsg}`,
         { maxTokens: 512 },
       );

@@ -3,10 +3,10 @@ import { Chip } from "../../components/atoms";
 import type { ModelInfo } from "../../api/types";
 
 export const RBAC_ROWS = [
-  { role: "Screener", users: 12, access: "51A Intake, Own Cases, Background Check Results" },
+  { role: "Screener", users: 12, access: "Initial Report Intake, Own Cases, Background Check Results" },
   { role: "Supervisor", users: 4, access: "All Screener Data, Approvals, Team Analytics" },
-  { role: "Social Worker (51B)", users: 8, access: "Assigned Cases, Briefings, Field Reports" },
-  { role: "DCF Admin", users: 2, access: "Triage keywords, Audit Logs, User Mgmt (No Case Data)" },
+  { role: "Social Worker", users: 8, access: "Assigned Cases, Briefings, Field Reports" },
+  { role: "System Admin", users: 2, access: "Triage keywords, Audit Logs, User Mgmt (No Case Data)" },
   { role: "EOHHS Analytics", users: 1, access: "Aggregate Metrics Only — No PII Access" },
 ];
 

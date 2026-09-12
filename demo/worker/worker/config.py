@@ -5,7 +5,7 @@ ARTIFACT_DIR = os.environ.get("ARTIFACT_DIR", "/data/artifacts")
 
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "huggingface")
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", os.environ.get("HUGGINGFACE_API_KEY", ""))
-HF_MODEL = os.environ.get("HF_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 HF_API_BASE = os.environ.get("HF_API_BASE", "https://router.huggingface.co/v1")
 LLM_REQUEST_TIMEOUT_S = float(
     os.environ.get("LLM_REQUEST_TIMEOUT_MS", os.environ.get("OLLAMA_REQUEST_TIMEOUT_MS", "600000"))

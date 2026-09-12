@@ -28,7 +28,7 @@ export async function generateDraft(caseId: string, fieldNotes: string): Promise
   let content: string;
   try {
     content = await llmChat(
-      "You draft DCF 51B field investigation reports. Use professional tone. Include FINDINGS and DETERMINATION sections.",
+      "You draft child welfare Field Investigation reports. Use professional tone. Include FINDINGS and DETERMINATION sections.",
       `Case ${caseRows[0].external_id}, child ${child}, visit ${visitDate}.\nField notes:\n${notes}\nDraft the report body.`,
     );
   } catch {

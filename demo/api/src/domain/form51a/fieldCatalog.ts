@@ -1,4 +1,4 @@
-/** Canonical 51A field definitions — intake capture aligned with official 51A template. */
+/** Canonical Initial Report field definitions — intake capture aligned with official form template. */
 
 export type SectionId = "child" | "incident" | "reporter" | "household" | "filing";
 
@@ -67,7 +67,7 @@ export const FORM_CATALOG: Record<SectionId, SectionDef> = {
     ],
   },
   filing: {
-    title: "51A Filing Details",
+    title: "Initial Report Filing Details",
     icon: "📋",
     fields: [
       { id: "action_taken", label: "Action Already Taken", required: false, multiline: true },

@@ -69,7 +69,7 @@ router.get("/screening/pending", requireRoles("supervisor"), async (_req, res, n
           }
           if (!aiSummary && sections[0]?.body) aiSummary = sections[0].body;
         } else {
-          aiSummary = "AI supervisor summary pending — review 51A form and risk score.";
+          aiSummary = "AI supervisor summary pending — review Initial Report form and risk score.";
           aiRecommendation = r.emergency
             ? "Screen In — Emergency (2-Hour Response)"
             : "Review required — advisory only";

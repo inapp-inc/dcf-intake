@@ -18,7 +18,7 @@ export function AuditTrailPage({ caseId, onBack }: { caseId: string | null; onBa
       <EmptyStateCard
         icon="🔐"
         title="Audit Trail"
-        description="Tamper-evident 7-year audit log with all AI outputs, human overrides, and system events. Accessible to authorized DCF, EOHHS, and OIG personnel."
+        description="Tamper-evident 7-year audit log with all AI outputs, human overrides, and system events. Accessible to authorized agency and oversight personnel."
       />
     );
   }

@@ -16,7 +16,7 @@ export async function completeForm51aCheckpoint(caseId: string): Promise<{
   const refreshed = await formRepo.loadForm51A(caseId);
   const validation = validateForCheckpoint(refreshed.sections);
   if (!validation.ok) {
-    throw Object.assign(new Error("Form 51A incomplete"), {
+    throw Object.assign(new Error("Initial Report incomplete"), {
       status: 409,
       code: "FORM_51A_INCOMPLETE",
       missingFields: validation.missingFields,

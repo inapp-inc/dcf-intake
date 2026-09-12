@@ -72,7 +72,7 @@ export function AdminTriageConfig() {
               <p style={{ color: C.coral, fontSize: 13, marginBottom: 10 }}>
                 {error ?? "Could not load triage configuration."}
               </p>
-              <button type="button" className="dcf-btn ghost-btn" onClick={() => void reload()}>
+              <button type="button" className="app-btn ghost-btn" onClick={() => void reload()}>
                 Retry
               </button>
             </div>
@@ -87,7 +87,7 @@ export function AdminTriageConfig() {
                 Number of confirmed emergency indicators before escalation messaging appears on intake.
               </p>
               <input
-                className="dcf-input"
+                className="app-input"
                 type="number"
                 min={1}
                 max={10}
@@ -111,7 +111,7 @@ export function AdminTriageConfig() {
                 {config.keywordPatterns.map((kw, i) => (
                   <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr 60px auto", gap: 8, alignItems: "center" }}>
                     <input
-                      className="dcf-input"
+                      className="app-input"
                       value={kw.label}
                       placeholder="Label"
                       onChange={(e) => {
@@ -121,7 +121,7 @@ export function AdminTriageConfig() {
                       }}
                     />
                     <input
-                      className="dcf-input"
+                      className="app-input"
                       value={kw.pattern}
                       placeholder="Regex pattern"
                       onChange={(e) => {
@@ -131,7 +131,7 @@ export function AdminTriageConfig() {
                       }}
                     />
                     <input
-                      className="dcf-input"
+                      className="app-input"
                       value={kw.flags ?? "i"}
                       placeholder="flags"
                       onChange={(e) => {
@@ -142,7 +142,7 @@ export function AdminTriageConfig() {
                     />
                     <button
                       type="button"
-                      className="dcf-btn ghost-btn"
+                      className="app-btn ghost-btn"
                       style={{ fontSize: 11, padding: "5px 8px", color: C.coral }}
                       title="Remove pattern"
                       onClick={() =>
@@ -159,7 +159,7 @@ export function AdminTriageConfig() {
               </div>
               <button
                 type="button"
-                className="dcf-btn ghost-btn"
+                className="app-btn ghost-btn"
                 style={{ marginTop: 10 }}
                 onClick={() =>
                   setDraft({
@@ -185,7 +185,7 @@ export function AdminTriageConfig() {
                     style={{ display: "grid", gridTemplateColumns: "140px 1fr 100px auto", gap: 8, alignItems: "center" }}
                   >
                     <input
-                      className="dcf-input"
+                      className="app-input"
                       value={ind.id}
                       placeholder="id"
                       onChange={(e) => {
@@ -195,7 +195,7 @@ export function AdminTriageConfig() {
                       }}
                     />
                     <input
-                      className="dcf-input"
+                      className="app-input"
                       value={ind.label}
                       placeholder="Label shown to staff"
                       onChange={(e) => {
@@ -205,7 +205,7 @@ export function AdminTriageConfig() {
                       }}
                     />
                     <select
-                      className="dcf-input"
+                      className="app-input"
                       value={ind.severity}
                       onChange={(e) => {
                         const next = [...config.triageIndicators];
@@ -218,7 +218,7 @@ export function AdminTriageConfig() {
                     </select>
                     <button
                       type="button"
-                      className="dcf-btn ghost-btn"
+                      className="app-btn ghost-btn"
                       style={{ fontSize: 11, padding: "5px 8px", color: C.coral }}
                       title="Remove indicator"
                       onClick={() =>
@@ -235,7 +235,7 @@ export function AdminTriageConfig() {
               </div>
               <button
                 type="button"
-                className="dcf-btn ghost-btn"
+                className="app-btn ghost-btn"
                 style={{ marginTop: 10 }}
                 onClick={() =>
                   setDraft({
@@ -272,14 +272,14 @@ export function AdminTriageConfig() {
             <div style={{ display: "flex", gap: 10 }}>
               <button
                 type="button"
-                className="dcf-btn"
+                className="app-btn"
                 style={{ background: C.teal, color: "#fff" }}
                 disabled={saving}
                 onClick={() => void save()}
               >
                 {saving ? "Saving…" : "Save configuration"}
               </button>
-              <button type="button" className="dcf-btn ghost-btn" onClick={resetDefaults}>
+              <button type="button" className="app-btn ghost-btn" onClick={resetDefaults}>
                 Reset to defaults
               </button>
             </div>

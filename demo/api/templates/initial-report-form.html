@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Initial Report Form — Child Welfare Agency</title>
+<style>
+  :root {
+    --ink: #111;
+    --line: #000;
+    --accent: #1a3a6b;
+    --muted: #555;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Times New Roman", Georgia, serif;
+    color: var(--ink);
+    margin: 0;
+    background: #e9e9e9;
+    font-size: 11pt;
+    line-height: 1.25;
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  }
+  .toolbar span { margin-right: auto; font-weight: bold; letter-spacing: .3px; }
+  .toolbar button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: #fff;
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .toolbar button.secondary { background: rgba(255,255,255,.18); color: #fff; }
+  .toolbar button:hover { opacity: .9; }
+  .toolbar .save-status { font-size: 12px; font-weight: 600; margin-left: 4px; opacity: .95; }
+
+  .form-banner {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 16px;
+  }
+  .form-banner-case { background: #E0F2FE; color: #0C4A6E; }
+  .form-banner-draft { background: #FEF3C7; color: #92400E; font-weight: 600; }
+
+  .page {
+    background: #fff;
+    width: 8.5in;
+    min-height: 11in;
+    margin: 20px auto;
+    padding: 0.6in 0.7in;
+    box-shadow: 0 2px 12px rgba(0,0,0,.2);
+  }
+
+  .head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .logo {
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .logo .agency-mark {
+    background: var(--accent);
+    color: #fff;
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    display: inline-block;
+  }
+  .logo .sub1 { font-size: 7px; color: var(--accent); margin-top: 3px; letter-spacing: .5px; }
+  .logo .sub2 { font-size: 13px; color: var(--accent); font-weight: bold; }
+  .logo .sub3 { font-size: 6.5px; color: var(--muted); letter-spacing: .3px; }
+  .title { font-family: Arial, Helvetica, sans-serif; font-weight: bold; font-size: 17px; align-self: center; }
+
+  .intro {
+    display: flex;
+    gap: 14px;
+    margin: 12px 0;
+    font-size: 9.5pt;
+    line-height: 1.3;
+  }
+  .seal {
+    width: 62px; height: 62px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 6px; text-align: center; color: var(--accent);
+    font-family: Arial, sans-serif;
+  }
+  .intro p { margin: 0 0 5px; }
+  .intro .step { margin-left: 4px; }
+  .note { font-size: 9.5pt; margin: 10px 0; }
+
+  .section-bar {
+    border-top: 2px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 11pt;
+    letter-spacing: .5px;
+    padding: 3px 0;
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+  .section-bar::before { content: "\025B8  "; color: var(--accent); }
+
+  input[type="text"], textarea {
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 11pt;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    width: 100%;
+    padding: 2px 3px;
+    color: #00339a;
+  }
+  input[type="text"]:focus, textarea:focus { outline: none; background: #fffbe6; }
+  textarea { border: 1px solid #888; resize: vertical; min-height: 64px; line-height: 1.4; }
+
+  .fieldlabel { font-size: 8pt; color: var(--muted); text-align: center; display: block; margin-top: 1px; }
+  .rowlabel { font-size: 9.5pt; margin-top: 6px; }
+
+  table.children { width: 100%; border-collapse: collapse; margin-top: 4px; border: 1px solid var(--line); }
+  table.children th {
+    font-size: 9pt; font-weight: bold; color: var(--ink);
+    text-align: left; padding: 6px 4px; vertical-align: bottom;
+    background: #f3f4f6;
+    border-bottom: 1px solid var(--line);
+  }
+  table.children td {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 4px;
+    vertical-align: middle;
+    min-height: 32px;
+  }
+  table.children tbody tr:nth-child(1) td { background: #fafcff; }
+  table.children td input[type="text"] {
+    border: none;
+    border-bottom: 1px solid #666;
+    min-height: 22px;
+    background: transparent;
+  }
+  table.children td input[type="text"]:not([value]):not(:focus) { color: #00339a; }
+  .sexcell { white-space: nowrap; font-size: 9.5pt; }
+  .sexcell label { margin-right: 10px; display: inline-flex; align-items: center; gap: 4px; }
+
+  .grid3 { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 0 14px; margin-top: 6px; }
+  .grid4 { display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr; gap: 0 14px; margin-top: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; margin-top: 6px; }
+  .field { display: flex; flex-direction: column; }
+  .leadlabel { font-size: 9.5pt; margin-top: 8px; }
+
+  .inline { display: flex; align-items: center; gap: 6px; }
+  .inline .grow { flex: 1; }
+
+  .checks { display: inline-flex; gap: 22px; align-items: center; }
+  .checks label { font-size: 10pt; display: inline-flex; align-items: center; gap: 5px; }
+
+  .q { font-size: 10pt; margin: 12px 0 3px; }
+  .sig { margin-top: 18px; font-size: 10.5pt; display: flex; align-items: flex-end; gap: 8px; }
+  .sig input { flex: 1; }
+
+  .offices-title {
+    font-family: Arial, Helvetica, sans-serif; font-weight: bold; font-size: 11pt;
+    text-align: center; letter-spacing: 1px; margin: 16px 0 8px; text-transform: uppercase;
+  }
+  .offices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 24px; font-size: 8.5pt; }
+  .region { font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 2px; color: var(--accent); }
+  .office-row { display: flex; justify-content: space-between; }
+  .hotline { margin-top: 10px; font-size: 9pt; border-top: 1px solid var(--line); padding-top: 6px; }
+  .hotline strong { font-size: 11pt; }
+
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none; }
+    .page { box-shadow: none; margin: 0; width: auto; min-height: auto; padding: 0.4in 0.5in; }
+    input[type="text"], textarea { color: #000; }
+    input:focus, textarea:focus { background: transparent; }
+    .page:first-of-type { page-break-after: always; }
+    @page { size: letter; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span>Initial Report Form (Fillable)</span>
+  <button type="button" id="btn-save-form">Save</button>
+  <button type="button" id="btn-save-print-form">Save and print</button>
+  <span id="save-status" class="save-status"></span>
+</div>
+
+<div class="page">
+  <div class="head">
+    <div class="logo">
+      <div class="agency-mark">CWA</div>
+      <div class="sub1">CHILD WELFARE AGENCY</div>
+      <div class="sub2">Intake &amp; Investigation Services</div>
+      <div class="sub3">Protecting Children • Supporting Families</div>
+    </div>
+    <div class="title">Report of Child(ren) Alleged to be Suffering from<br>Serious Physical or Emotional Injury by Abuse or Neglect</div>
+  </div>
+
+  <div class="intro">
+    <div class="seal">CHILD<br>WELFARE<br>AGENCY</div>
+    <div>
+      <p>State law requires mandated reporters to immediately make a report to the child welfare agency when they have reasonable cause to believe that a child under the age of 18 is suffering from abuse and/or neglect by:</p>
+      <p class="step"><strong>STEP 1:</strong> Immediately reporting by oral communication to the local agency intake office (see contact information at end of form); and</p>
+      <p class="step"><strong>STEP 2:</strong> Completing and sending this written Initial Report to the local agency office <strong>within 48 hours of making the oral report.</strong></p>
+      <p>For more information about requirements for mandated reporters and filing a report of alleged abuse and/or neglect, refer to your agency's mandated reporter guide.</p>
+    </div>
+  </div>
+
+  <p class="note">Please complete all sections of this form. If some data is uncertain or unknown, please signify by placing a question mark (“?”) after the entry.</p>
+
+  <div class="section-bar" id="section-children-reported">Children Reported</div>
+  <table class="children" aria-labelledby="section-children-reported">
+    <thead>
+      <tr><th style="width:32%">Name</th><th style="width:34%">Current Location / Address</th><th style="width:18%">Sex</th><th style="width:16%">Age or Date of Birth</th></tr>
+    </thead>
+    <tbody id="childrenBody">
+      <tr>
+        <td><input type="text" name="child1_name" placeholder="Primary child — full name"></td>
+        <td><input type="text" name="child1_address" placeholder="Current location / address"></td>
+        <td class="sexcell">
+          <label><input type="checkbox" name="child1_male"> Male</label>
+          <label><input type="checkbox" name="child1_female"> Female</label>
+        </td>
+        <td><input type="text" name="child1_age" placeholder="Age or DOB"></td>
+      </tr>
+      <tr>
+        <td><input type="text" name="child2_name" placeholder="Additional child (if any)"></td>
+        <td><input type="text" name="child2_address" placeholder="Current location / address"></td>
+        <td class="sexcell">
+          <label><input type="checkbox" name="child2_male"> Male</label>
+          <label><input type="checkbox" name="child2_female"> Female</label>
+        </td>
+        <td><input type="text" name="child2_age" placeholder="Age or DOB"></td>
+      </tr>
+      <tr>
+        <td><input type="text" name="child3_name" placeholder="Additional child (if any)"></td>
+        <td><input type="text" name="child3_address" placeholder="Current location / address"></td>
+        <td class="sexcell">
+          <label><input type="checkbox" name="child3_male"> Male</label>
+          <label><input type="checkbox" name="child3_female"> Female</label>
+        </td>
+        <td><input type="text" name="child3_age" placeholder="Age or DOB"></td>
+      </tr>
+      <tr>
+        <td><input type="text" name="child4_name" placeholder="Additional child (if any)"></td>
+        <td><input type="text" name="child4_address" placeholder="Current location / address"></td>
+        <td class="sexcell">
+          <label><input type="checkbox" name="child4_male"> Male</label>
+          <label><input type="checkbox" name="child4_female"> Female</label>
+        </td>
+        <td><input type="text" name="child4_age" placeholder="Age or DOB"></td>
+      </tr>
+      <tr>
+        <td><input type="text" name="child5_name" placeholder="Additional child (if any)"></td>
+        <td><input type="text" name="child5_address" placeholder="Current location / address"></td>
+        <td class="sexcell">
+          <label><input type="checkbox" name="child5_male"> Male</label>
+          <label><input type="checkbox" name="child5_female"> Female</label>
+        </td>
+        <td><input type="text" name="child5_age" placeholder="Age or DOB"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-bar">Parent or Guardian 1</div>
+  <div class="leadlabel">Name</div>
+  <div class="grid3">
+    <div class="field"><input type="text" name="pg1_first"><span class="fieldlabel">First</span></div>
+    <div class="field"><input type="text" name="pg1_last"><span class="fieldlabel">Last</span></div>
+    <div class="field"><input type="text" name="pg1_middle"><span class="fieldlabel">Middle</span></div>
+  </div>
+  <div class="leadlabel">Address</div>
+  <div class="grid4">
+    <div class="field"><input type="text" name="pg1_street"><span class="fieldlabel">Street &amp; Number</span></div>
+    <div class="field"><input type="text" name="pg1_city"><span class="fieldlabel">City / Town</span></div>
+    <div class="field"><input type="text" name="pg1_state"><span class="fieldlabel">State</span></div>
+    <div class="field"><input type="text" name="pg1_zip"><span class="fieldlabel">Zip Code</span></div>
+  </div>
+  <div class="grid2">
+    <div class="inline rowlabel">Phone #&nbsp;<span class="grow"><input type="text" name="pg1_phone"></span></div>
+    <div class="inline rowlabel">Age/Date of Birth&nbsp;<span class="grow"><input type="text" name="pg1_dob"></span></div>
+  </div>
+
+  <div class="section-bar">Parent or Guardian 2</div>
+  <div class="leadlabel">Name</div>
+  <div class="grid3">
+    <div class="field"><input type="text" name="pg2_first"><span class="fieldlabel">First</span></div>
+    <div class="field"><input type="text" name="pg2_last"><span class="fieldlabel">Last</span></div>
+    <div class="field"><input type="text" name="pg2_middle"><span class="fieldlabel">Middle</span></div>
+  </div>
+  <div class="leadlabel">Address</div>
+  <div class="grid4">
+    <div class="field"><input type="text" name="pg2_street"><span class="fieldlabel">Street &amp; Number</span></div>
+    <div class="field"><input type="text" name="pg2_city"><span class="fieldlabel">City / Town</span></div>
+    <div class="field"><input type="text" name="pg2_state"><span class="fieldlabel">State</span></div>
+    <div class="field"><input type="text" name="pg2_zip"><span class="fieldlabel">Zip Code</span></div>
+  </div>
+  <div class="grid2">
+    <div class="inline rowlabel">Phone #&nbsp;<span class="grow"><input type="text" name="pg2_phone"></span></div>
+    <div class="inline rowlabel">Age/Date of Birth&nbsp;<span class="grow"><input type="text" name="pg2_dob"></span></div>
+  </div>
+
+  <div class="section-bar">Reporter / Report</div>
+  <div class="grid2" style="align-items:center">
+    <div class="inline rowlabel">Report Date:&nbsp;<span class="grow"><input type="text" name="report_date"></span></div>
+    <div class="checks">
+      <label><input type="checkbox" name="mandatory"> Mandatory Report</label>
+      <label><input type="checkbox" name="voluntary"> Voluntary Report</label>
+    </div>
+  </div>
+  <div class="leadlabel">Reporter’s Name:</div>
+  <div class="grid3">
+    <div class="field"><input type="text" name="rep_first"><span class="fieldlabel">First</span></div>
+    <div class="field"><input type="text" name="rep_last"><span class="fieldlabel">Last</span></div>
+    <div class="field"><input type="text" name="rep_middle"><span class="fieldlabel">Middle</span></div>
+  </div>
+  <div style="font-size:8.5pt;color:var(--muted);margin-top:2px">(If the reporter represents an institution, school or facility, please indicate)</div>
+  <div style="margin-top:4px"><input type="text" name="rep_institution"></div>
+  <div class="leadlabel">Reporter’s Address:</div>
+  <div class="grid4">
+    <div class="field"><input type="text" name="rep_street"><span class="fieldlabel">Street &amp; Number</span></div>
+    <div class="field"><input type="text" name="rep_city"><span class="fieldlabel">City / Town</span></div>
+    <div class="field"><input type="text" name="rep_state"><span class="fieldlabel">State</span></div>
+    <div class="field"><input type="text" name="rep_zip"><span class="fieldlabel">Zip Code</span></div>
+  </div>
+  <div class="inline rowlabel" style="margin-top:6px">Phone #:&nbsp;<span class="grow"><input type="text" name="rep_phone"></span></div>
+  <div class="inline rowlabel" style="margin-top:8px">
+    Has reporter informed caretaker of report?&nbsp;&nbsp;
+    <span class="checks">
+      <label><input type="checkbox" name="caretaker_yes"> Yes</label>
+      <label><input type="checkbox" name="caretaker_no"> No</label>
+    </span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="q">What is the nature and extent of injury, abuse, maltreatment or neglect? Please list any prior evidence of same and/or other worries regarding danger to the child(ren). (Please cite the source of this information if not observed firsthand.)</div>
+  <textarea name="q_nature" rows="4"></textarea>
+
+  <div class="q">If known, please provide the name(s) and contact information of the person(s) responsible for the injury, abuse, maltreatment or neglect and/or any other information that you think might be helpful in establishing the cause of the injury, abuse, maltreatment or neglect:</div>
+  <textarea name="q_responsible" rows="4"></textarea>
+
+  <div class="q">What are the circumstances under which the reporter became aware of the injury, abuse, maltreatment or neglect? Please include information on dates and timeframes for when the injury, abuse, maltreatment or neglect occurred:</div>
+  <textarea name="q_circumstances" rows="4"></textarea>
+
+  <div class="q">What action has been taken thus far to treat, shelter or otherwise assist the child(ren) to deal with the situation?</div>
+  <textarea name="q_action" rows="3"></textarea>
+
+  <div class="q">If report involved alleged domestic violence, please list any information that will help the agency make safe contact with the family (e.g., work schedule, place of employment, daily routines for the adult victim):</div>
+  <textarea name="q_dv" rows="3"></textarea>
+
+  <div class="q">Please provide any information about the family’s strengths and capacities that you think will be helpful to the agency in ensuring the child’s safety and supporting the family to address the abuse and/or neglect concerns:</div>
+  <textarea name="q_strengths" rows="3"></textarea>
+
+  <div class="sig">Signature of Reporter: <input type="text" name="signature"></div>
+
+  <div class="offices-title">Agency Intake Offices</div>
+  <div class="offices">
+    <div>
+      <div class="region">Northern Region</div>
+      <div class="office-row"><span>North Intake Office</span><span>(555) 100-2000</span></div>
+      <div class="office-row"><span>Metro North Office</span><span>(555) 100-2100</span></div>
+      <div class="office-row"><span>Coastal Office</span><span>(555) 100-2200</span></div>
+    </div>
+    <div>
+      <div class="region">Southern Region</div>
+      <div class="office-row"><span>South Intake Office</span><span>(555) 100-3000</span></div>
+      <div class="office-row"><span>Central Office</span><span>(555) 100-3100</span></div>
+      <div class="office-row"><span>Western Office</span><span>(555) 100-3200</span></div>
+    </div>
+  </div>
+  <div class="hotline">
+    To report child abuse and/or neglect: Weekdays from 9:00 am to 5:00 pm call the local agency intake office.
+    Weekdays after 5:00 pm and 24 hours on weekends and holidays call the
+    State Child Protection Hotline <strong>1-800-555-0199</strong>
+  </div>
+</div>
+
+</body>
+</html>

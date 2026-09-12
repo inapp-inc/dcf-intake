@@ -101,13 +101,13 @@ export function SupervisorScreeningStatus({
             onClick: () => setQueueFilter("assigned"),
           },
           {
-            label: "51B submitted",
+            label: "Field Report submitted",
             val: String(stats.reportSubmitted),
             clr: C.green,
             onClick: () => setQueueFilter("report_submitted"),
           },
           {
-            label: "51B returned",
+            label: "Field Report returned",
             val: String(stats.report51b),
             sub: "Draft on file for supervisor review",
             clr: C.teal,
@@ -158,7 +158,7 @@ export function SupervisorScreeningStatus({
                   <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }}>Status</th>
                   <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }}>Screen-in</th>
                   <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }}>By</th>
-                  <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }}>51B</th>
+                  <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }}>Field Report</th>
                   {onViewCase && (
                     <th style={{ padding: "8px 10px", color: C.textLight, fontWeight: 700 }} />
                   )}

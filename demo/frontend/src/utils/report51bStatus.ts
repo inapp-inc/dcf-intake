@@ -1,6 +1,6 @@
 import type { CaseSummary } from "../api/types";
 
-/** Labels derived only from case status + latest 51B draft status returned by the API. */
+/** Labels derived only from case status + latest Field Report draft status returned by the API. */
 export type Report51bWorkflowStep = "not_started" | "draft" | "submitted";
 
 export function report51bWorkflowStep(

@@ -38,7 +38,7 @@ const FORM_SECTION_LABELS: Record<SectionId, { title: string; icon: string }> = 
   incident: { title: "Incident Details", icon: "🔍" },
   reporter: { title: "Reporter Information", icon: "📞" },
   household: { title: "Household Members", icon: "👨‍👩‍👧" },
-  filing: { title: "51A Filing Details", icon: "📋" },
+  filing: { title: "Initial Report Filing Details", icon: "📋" },
 };
 
 function nlpSettled(stages: Record<string, string> | undefined): boolean {
@@ -97,14 +97,14 @@ function submitStatusMessage(form: Form51A): { text: string; warn: boolean; miss
   }
   if (completion.canCompleteCheckpoint) {
     return {
-      text: "All fields complete — complete the 51A checkpoint to enable submit (or submit will auto-complete)",
+      text: "All fields complete — complete the Initial Report checkpoint to enable submit (or submit will auto-complete)",
       warn: true,
       missingLabels,
     };
   }
   if (checkpointStatus !== "complete" && checkpointStatus !== "locked") {
     return {
-      text: "Complete the 51A checkpoint before submitting to supervisor",
+      text: "Complete the Initial Report checkpoint before submitting to supervisor",
       warn: true,
       missingLabels,
     };
@@ -382,7 +382,7 @@ export function IntakePage({
       if (onSubmitted) setTimeout(() => onSubmitted(), 1500);
     } catch (e) {
       if (e instanceof ApiError && e.code === "FORM_51A_INCOMPLETE") {
-        setError("51A checkpoint must be complete before submit.");
+        setError("Initial Report checkpoint must be complete before submit.");
       } else {
         setError(e instanceof Error ? e.message : "Submit failed");
       }
@@ -447,7 +447,7 @@ export function IntakePage({
         <div className="card" style={{ padding: "13px 17px", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: C.textLight, fontWeight: 700, textTransform: "uppercase" }}>
-              New 51A Report
+              New Initial Report
             </div>
             <div style={{ fontSize: 19, fontWeight: 700, color: C.textDark, fontFamily: "'Fraunces', serif" }}>
               {externalId ? formatCaseTitle(externalId) : form?.caseId ? formatCaseTitle(undefined, form.caseId) : "Creating case…"}
@@ -467,12 +467,12 @@ export function IntakePage({
           )}
           <button
             type="button"
-            className="dcf-btn ghost-btn"
+            className="app-btn ghost-btn"
             style={{ fontSize: 12 }}
             disabled={!caseId}
             onClick={() => caseId && void api.openOfficialForm(caseId)}
           >
-            Open 51A
+            Open Initial Report
           </button>
         </div>
 
@@ -530,7 +530,7 @@ export function IntakePage({
         </IntakeCollapsibleSection>
 
         <div style={{ display: "flex", gap: 14, alignItems: "center", padding: "0 2px" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.textDark }}>51A report fields</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.textDark }}>Initial Report fields</div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 11, height: 11, borderRadius: 3, background: C.tealPale, border: `1.5px solid ${C.teal}` }} />
             <span style={{ fontSize: 10, color: C.textLight }}>AI auto-populated</span>
@@ -638,7 +638,7 @@ export function IntakePage({
               {submitStatus && submitStatus.missingLabels.length > 0 && form && (
                 <button
                   type="button"
-                  className="dcf-btn ghost-btn"
+                  className="app-btn ghost-btn"
                   onClick={() => {
                     const sid = firstMissingSection(form);
                     if (sid) setOpenSec(sid);
@@ -650,7 +650,7 @@ export function IntakePage({
               {caseId && (
                 <button
                   type="button"
-                  className="dcf-btn ghost-btn"
+                  className="app-btn ghost-btn"
                   disabled={reextracting || !transcript.length}
                   onClick={async () => {
                     setNlpReextracting(true);
@@ -666,22 +666,22 @@ export function IntakePage({
                   Re-run AI extraction
                 </button>
               )}
-              <button type="button" className="dcf-btn ghost-btn">
+              <button type="button" className="app-btn ghost-btn">
                 Save Draft
               </button>
               {canComplete && (
                 <button
                   type="button"
-                  className="dcf-btn"
+                  className="app-btn"
                   style={{ background: C.navy, color: "#fff" }}
                   onClick={() => void handleCompleteCheckpoint()}
                 >
-                  Complete 51A Checkpoint
+                  Complete Initial Report Checkpoint
                 </button>
               )}
               <button
                 type="button"
-                className="dcf-btn"
+                className="app-btn"
                 style={{ background: C.teal, color: "#fff" }}
                 disabled={!form || !submitReady || submitting}
                 onClick={() => void handleSubmit()}

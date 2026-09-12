@@ -7,7 +7,7 @@ ROUTE="${NGINX_ROUTE:-}"
 PORT="${AIT_HTTP_PORT:-4010}"
 ROUTES_DIR="${NGINX_ROUTES_DIR:-/etc/nginx/routes}"
 DOMAIN="${NGINX_DOMAIN:-foundry.inapp.com}"
-APP_BASE_PATH="${APP_BASE_PATH:-/dcfintake}"
+APP_BASE_PATH="${APP_BASE_PATH:-/intake}"
 SKIP_RELOAD="${SKIP_NGINX_RELOAD:-0}"
 
 usage() {
@@ -15,13 +15,13 @@ usage() {
 Usage: install-host-nginx.sh [options]
 
 Options:
-  --route NAME          Path segment (default: from APP_BASE_PATH, e.g. dcfintake)
+  --route NAME          Path segment (default: from APP_BASE_PATH, e.g. intake)
   --port PORT           Upstream HTTP port (default: AIT_HTTP_PORT or 4010)
   --routes-dir DIR      Default: /etc/nginx/routes
   --skip-reload         Write config only; do not nginx -t / reload
 
 Environment:
-  APP_BASE_PATH         /dcfintake → route dcfintake
+  APP_BASE_PATH         /intake → route intake
   NGINX_ROUTE           Override route name
   AIT_HTTP_PORT         Backend port
   NGINX_ROUTES_DIR      Route snippets directory

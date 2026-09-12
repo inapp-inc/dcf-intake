@@ -1,4 +1,4 @@
-/** Canonical data model for the official MA DCF 51A report form. */
+/** Canonical data model for the agency Initial Report form. */
 
 export interface Form51AChildEntry {
   name: string;
