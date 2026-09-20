@@ -25,8 +25,11 @@ module.exports = {
     {
       name: "intake-worker",
       cwd: path.join(root, "worker"),
-      script: "worker/main.py",
-      interpreter: workerPython,
+      // Run as a package module (same as worker/Dockerfile). Direct `worker/main.py`
+      // fails relative imports: "attempted relative import with no known parent package".
+      script: workerPython,
+      args: "-m worker.main",
+      interpreter: "none",
       instances: 1,
       exec_mode: "fork",
       max_memory_restart: "768M",
