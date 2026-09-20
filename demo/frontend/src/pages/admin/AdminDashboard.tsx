@@ -127,6 +127,7 @@ export function AdminDashboard({
               disabled={resetConfirm !== "RESET" || resetting}
               onClick={() => {
                 void runReset().then((r) => {
+                  if (!r) return;
                   setResetMsg(
                     `Demo data cleared (${r.casesRemoved} removed, ${r.seededCases} seeded).`,
                   );
