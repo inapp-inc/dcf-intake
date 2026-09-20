@@ -12,8 +12,8 @@ Adapted from the shared [PM2 Ubuntu deploy runbook](https://github.com/cursor/sk
 |---|---|---|
 | `<APP_NAME>` | `intake-demo` | Process prefix, logs, nginx route |
 | `<INSTALL_ROOT>` | `/var/www/intake-demo` | Flat zip extract path |
-| `<ARCHIVE_NAME>` | `intake-demo-pm2.zip` | From `scripts/package-pm2.sh` |
-| `<STAGING_DIR>` | `../dist/intake-pm2-staging` | Local stage (optional) |
+| `<STAGING_DIR>` | `../dist/intake-demo-staging` | From `deploy/create-archive.sh` (zip manually) |
+| `<ARCHIVE_NAME>` | your zip name | Zip staging folder contents yourself |
 | `<PUBLIC_HOST>` | `client-demo.inapp.com` | Shared demo hostname |
 | `<PUBLIC_SCHEME>` | `https` | |
 | `<NODE_MAJOR>` | `20` | API build + runtime |
@@ -93,9 +93,15 @@ cd demo
 # package-pm2.sh creates .env + config/ai.env from examples when missing
 # Edit config/ai.env (HF_API_TOKEN) before packaging if not already set
 
-chmod +x scripts/*.sh scripts/lib/*.sh start.sh run-production.sh deploy/*.sh
-./scripts/package-pm2.sh
-# → ../dist/intake-demo-pm2.zip
+chmod +x deploy/create-archive.sh scripts/*.sh start.sh run-production.sh
+./deploy/create-archive.sh
+# → ../dist/intake-demo-staging/  (flat install-root layout)
+
+Zip manually (start.sh at archive root):
+
+```bash
+cd ../dist/intake-demo-staging
+zip -r ../intake-demo.zip .
 ```
 
 Copy to VM:
@@ -218,7 +224,7 @@ ASR uses Hugging Face unless `HF_ASR_API_URL` points elsewhere.
 ## 9. Gotchas
 
 1. **`vite: not found`** — build uses `npm ci --include=dev`; do not set `NODE_ENV=production` before install.
-2. **CRLF on `start.sh`** — use `.gitattributes`; package script normalizes LF.
+2. **CRLF on `start.sh`** — `.gitattributes` + package normalizes all `*.sh`/`*.cjs`. Server fix: `sed -i 's/\r$//' fix-crlf.sh && bash fix-crlf.sh`. Windows: `powershell -File scripts/fix-crlf.ps1`.
 3. **SQLite + cluster** — ecosystem uses `instances: 1`, `exec_mode: fork`.
 4. **`0.0.0.0` binding** — set `HOST=127.0.0.1` in `.env` for PM2.
 5. **`--no-nginx` on updates** — avoids clobbering shared vhost during code-only deploys.

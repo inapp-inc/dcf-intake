@@ -8,6 +8,11 @@ cd "${ROOT}"
 # shellcheck disable=SC1091
 source "${ROOT}/scripts/lib/env-helpers.sh"
 
+# Windows-staged zips may carry CRLF in scripts and .env — fix before sourcing env.
+echo "==> Normalizing line endings (scripts + .env)…"
+normalize_lf_tree "${ROOT}"
+normalize_deploy_env_files "${ROOT}"
+
 NO_NGINX=0
 NO_BUILD=0
 NO_SEED=0

@@ -41,7 +41,7 @@ Public URL: `https://client-demo.inapp.com/intake/` via host nginx.
 
 | Script | Where | Purpose |
 |--------|-------|---------|
-| `scripts/package-pm2.sh` | Build machine | Create `dist/intake-demo-pm2.zip` |
+| `deploy/create-archive.sh` | Build machine | Stage `dist/intake-demo-staging/` (zip manually) |
 | `scripts/deploy-pm2.sh` | Target VM | Unzip + `start.sh` |
 | `start.sh` | Install root | Build, PM2, nginx |
 | `run-production.sh` | Install root | Build only or build + PM2 |
@@ -68,12 +68,13 @@ cd demo
 # Edit config/ai.env — HF_API_TOKEN for cloud AI (required before packaging)
 
 chmod +x scripts/*.sh start.sh run-production.sh deploy/*.sh
-./scripts/package-pm2.sh
-# → ../dist/intake-demo-pm2.zip
+./deploy/create-archive.sh
+# → ../dist/intake-demo-staging/  then zip manually for transfer
 ```
 
 ```bash
-scp ../dist/intake-demo-pm2.zip user@vm:/tmp/
+cd ../dist/intake-demo-staging && zip -r ../intake-demo.zip .
+scp ../dist/intake-demo.zip user@vm:/tmp/
 ```
 
 ### 3.2 On target VM

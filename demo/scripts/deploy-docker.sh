@@ -107,6 +107,12 @@ if [[ ! -f "${ROOT}/docker-compose.yml" ]]; then
   exit 1
 fi
 
+# Strip CRLF from Windows-packaged zip before running any bash script
+find "${ROOT}" -type f \( -name '*.sh' -o -name '*.bash' -o -name '*.cjs' \) \
+  -exec sed -i 's/\r$//' {} + 2>/dev/null \
+  || find "${ROOT}" -type f \( -name '*.sh' -o -name '*.bash' -o -name '*.cjs' \) \
+  -exec sed -i '' 's/\r$//' {} + 2>/dev/null || true
+
 # shellcheck disable=SC1091
 source "${ROOT}/scripts/lib/env-helpers.sh"
 AI_DEFAULTS="${ROOT}/config/ai-defaults.env"

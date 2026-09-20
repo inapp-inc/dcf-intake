@@ -1,3 +1,9 @@
+* text=auto
 *.sh text eol=lf
 *.bash text eol=lf
 *.cjs text eol=lf
+.env text eol=lf
+.env.example text eol=lf
+*.env text eol=lf
+*.env.example text eol=lf
+config/ai.env text eol=lf

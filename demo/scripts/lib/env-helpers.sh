@@ -9,6 +9,7 @@ env_value() {
     $0 !~ /^[[:space:]]*#/ && $1 == key {
       sub(/^[^=]*=/, "", $0)
       gsub(/^["'\'']|["'\'']$/, "", $0)
+      gsub(/\r$/, "", $0)
       print $0
       exit
     }
@@ -137,14 +138,52 @@ validate_hf_env() {
   validate_ai_env "$@"
 }
 
+normalize_deploy_env_files() {
+  local demo_root="$1"
+  local f
+  for f in \
+    "${demo_root}/.env" \
+    "${demo_root}/.env.example" \
+    "${demo_root}/config/ai.env" \
+    "${demo_root}/config/ai.env.example" \
+    "${demo_root}/deploy/.env.example"; do
+    normalize_lf_file "$f"
+  done
+}
+
 source_env_files() {
   local demo_root="$1"
   local env_file="${demo_root}/.env"
   local ai_env="${demo_root}/config/ai.env"
+  normalize_deploy_env_files "${demo_root}"
   set -a
   # shellcheck disable=SC1090
   [[ -f "$env_file" ]] && source "$env_file"
   # shellcheck disable=SC1090
   [[ -f "$ai_env" ]] && source "$ai_env"
   set +a
+}
+
+# Strip CRLF from deploy scripts (Windows zip / checkout). Safe to call repeatedly.
+normalize_lf_file() {
+  local f="$1"
+  [[ -f "$f" ]] || return 0
+  if command -v dos2unix >/dev/null 2>&1; then
+    dos2unix -q "$f" 2>/dev/null || true
+  else
+    sed -i 's/\r$//' "$f" 2>/dev/null || sed -i '' 's/\r$//' "$f" 2>/dev/null || true
+  fi
+}
+
+normalize_lf_tree() {
+  local root="$1"
+  local f
+  while IFS= read -r -d '' f; do
+    normalize_lf_file "$f"
+  done < <(
+    find "$root" -type f \( \
+      -name '*.sh' -o -name '*.bash' -o -name '*.cjs' -o \
+      -name '.env' -o -name '.env.example' -o -name '*.env' -o -name '*.env.example' \
+    \) -print0 2>/dev/null
+  )
 }

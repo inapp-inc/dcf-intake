@@ -100,6 +100,11 @@ echo "Included demo/.env and config/ai.env in deployment package"
 
 chmod +x "${PKG_ROOT}/scripts/"*.sh 2>/dev/null || true
 chmod +x "${PKG_ROOT}/scripts/lib/"*.sh 2>/dev/null || true
+chmod +x "${PKG_ROOT}/start.sh" "${PKG_ROOT}/run-production.sh" 2>/dev/null || true
+chmod +x "${PKG_ROOT}/deploy/"*.sh 2>/dev/null || true
+
+echo "Normalizing LF line endings in package (all *.sh / *.cjs)..."
+normalize_lf_tree "${PKG_ROOT}"
 
 PKG_PORT="$(env_value "${DEMO_DIR}/.env" AIT_HTTP_PORT)"
 PKG_PORT="${PKG_PORT:-11111}"

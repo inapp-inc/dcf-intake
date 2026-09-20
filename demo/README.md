@@ -28,9 +28,9 @@ cp config/ai.env.example config/ai.env
 ```bash
 cd demo
 # Edit config/ai.env after first run if needed (HF_API_TOKEN or LLM_PROVIDER=ollama)
-./scripts/package-pm2.sh
-# Creates .env + config/ai.env from examples when missing
-# → ../dist/intake-demo-pm2.zip (includes .env + config/ai.env)
+./deploy/create-archive.sh
+# or: ./scripts/package-pm2.sh
+# → ../dist/intake-demo-staging/  (zip manually before transfer)
 ```
 
 **Target VM:**

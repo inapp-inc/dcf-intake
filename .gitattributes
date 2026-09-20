@@ -1,0 +1,4 @@
+# Demo deploy scripts must use LF on Linux PM2/Docker hosts
+demo/**/*.sh text eol=lf
+demo/**/*.bash text eol=lf
+demo/**/*.cjs text eol=lf

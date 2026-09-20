@@ -52,6 +52,17 @@ if [[ ! -f "${INSTALL_ROOT}/start.sh" ]]; then
 fi
 
 cd "${INSTALL_ROOT}"
+
+# Strip CRLF before any bash script runs (Windows-packaged zip)
+find "${INSTALL_ROOT}" -type f \( \
+  -name '*.sh' -o -name '*.bash' -o -name '*.cjs' -o \
+  -name '.env' -o -name '.env.example' -o -name '*.env' -o -name '*.env.example' \
+\) -exec sed -i 's/\r$//' {} + 2>/dev/null \
+  || find "${INSTALL_ROOT}" -type f \( \
+  -name '*.sh' -o -name '*.bash' -o -name '*.cjs' -o \
+  -name '.env' -o -name '.env.example' -o -name '*.env' -o -name '*.env.example' \
+\) -exec sed -i '' 's/\r$//' {} + 2>/dev/null || true
+
 chmod +x start.sh run-production.sh deploy/*.sh scripts/*.sh scripts/lib/*.sh 2>/dev/null || true
 bash start.sh "${START_ARGS[@]}"
 
