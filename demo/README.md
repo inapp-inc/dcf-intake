@@ -5,7 +5,8 @@ Independent copy of the platform under `demo/` for a **simpler deployment**:
 | Full `codebase/deploy` | This demo |
 |------------------------|-----------|
 | PostgreSQL + Redis + MinIO | **SQLite** + **filesystem** artifacts |
-| ~9 containers | **3** (`nginx`, `api`, `ai-bundle` pipeline worker) |
+| ~9 containers | **PM2:** API + worker; nginx serves static SPA |
+| Docker optional | Legacy: **3** containers (`nginx`, `api`, `ai-bundle`) |
 | External DB optional | Single volume `/data` |
 
 **Frontend** and **API/worker behavior** match production. All AI (ASR + LLM) runs on **Hugging Face Inference** — zero local model RAM. Storage and queue layers are simplified implementations in the `demo/` copies only — [`codebase/`](../codebase/) is unchanged.
@@ -15,32 +16,37 @@ Independent copy of the platform under `demo/` for a **simpler deployment**:
 ```bash
 cd demo
 cp .env.example .env
-# Edit JWT_SECRET, INTERNAL_API_KEY, HF_API_TOKEN
+cp config/ai.env.example config/ai.env
+# Edit .env (JWT_SECRET, INTERNAL_API_KEY) and config/ai.env (HF_API_TOKEN or Ollama)
 ./scripts/up.sh
 ```
 
-## Package and deploy (VM — like production flow)
+## Package and deploy (VM — PM2, no Docker)
 
 **Build machine:**
 
 ```bash
 cd demo
-cp .env.example .env   # only if .env missing; set HF_API_TOKEN
-./scripts/package-docker.sh
-# → ../dist/intake-demo.zip (includes demo/.env with secrets)
+# Edit config/ai.env after first run if needed (HF_API_TOKEN or LLM_PROVIDER=ollama)
+./scripts/package-pm2.sh
+# Creates .env + config/ai.env from examples when missing
+# → ../dist/intake-demo-pm2.zip (includes .env + config/ai.env)
 ```
 
 **Target VM:**
 
 ```bash
-./scripts/deploy-docker.sh /path/to/intake-demo.zip
-# Uses packaged .env — no manual HF token setup when built from a machine with demo/.env
+./scripts/deploy-pm2.sh /path/to/intake-demo-pm2.zip
+# Or: unzip to /var/www/intake-demo && sudo bash start.sh
+pm2 save && pm2 startup
 ```
 
-Wrappers: `package-demo.sh` → `package-docker.sh`, `deploy-demo.sh` → `deploy-docker.sh`.
+Runbook: [`docs/DEPLOY-RUNBOOK.md`](docs/DEPLOY-RUNBOOK.md)
 
-- Local UI: `http://127.0.0.1:4010/intake/`
-- Foundry: `deploy-docker.sh` installs `/etc/nginx/routes/intake.conf` (same as `create-nginx-site.sh intake 4010`). Use `--skip-nginx` or `INSTALL_HOST_NGINX=0` to skip. Manual: `./scripts/install-host-nginx.sh`.
+- Loopback API: `http://127.0.0.1:11110/api/v1/health`
+- Public: `https://client-demo.inapp.com/intake/` (nginx serves SPA + proxies API)
+
+**Docker (legacy):** `package-docker.sh` / `deploy-docker.sh` — see [`docs/VM-RUNBOOK.md`](docs/VM-RUNBOOK.md).
 
 ## Frontend architecture (demo)
 
@@ -76,30 +82,35 @@ Demo accounts (click **Demo credentials** on the login form to fill):
 | Worker | `worker.demo` | `WorkerField!` |
 | Admin | `admin.demo` | `AdminDemo!` |
 
-## AI (Hugging Face — all cloud, zero local model RAM)
+## Live demo call (intake screener)
 
-The demo stack uses **Hugging Face Inference** for **all** AI work:
+Beside **Upload Call Recording**, the intake page includes **Live Demo Call** for simulating a hotline without telephony:
 
-| Task | Model (default) | Where it runs |
-|------|-----------------|---------------|
-| Transcription (ASR) | `openai/whisper-large-v3` | HF Inference API |
-| NLP, triage, documents, assistant | `meta-llama/Llama-3.1-8B-Instruct` | HF chat completions |
-| Risk score | **Statistical rules** (`statistical-v1`) | Not LLM — see `docs/risk-scoring-framework.md` |
+1. Click **Start live demo call** and allow microphone access.
+2. Speak naturally; audio is sent every ~15 seconds (or sooner on a pause).
+3. Each chunk is transcribed via HF Whisper; lines appear with a **Live** label.
+4. Form 51A fields populate incrementally; the **AIT Assistant** suggests questions for missing required fields.
+5. Click **End live call** to run triage and risk scoring on the stitched transcript.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `HF_API_TOKEN` | *(required)* | Token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) with Inference Providers permission |
-| `HF_ASR_MODEL` | `openai/whisper-large-v3` | Cloud Whisper model |
-| `HF_ASR_API_URL` | *(auto)* | Override with a dedicated Inference Endpoint URL if needed |
-| `ASR_REQUEST_TIMEOUT_MS` | `600000` | Long timeout for large audio files |
-| `LLM_PROVIDER` | `huggingface` | Set `ollama` only if you run a local Ollama elsewhere |
-| `HF_MODEL` | `meta-llama/Llama-3.1-8B-Instruct` | Chat model for NLP/assistant |
-| `HF_API_BASE` | `https://router.huggingface.co/v1` | OpenAI-compatible LLM endpoint |
-| `LLM_REQUEST_TIMEOUT_MS` | `600000` | Long timeout for slow/cold models |
+Upload and live session are **mutually exclusive** on the same case. Spec: `openspec/changes/live-intake-demo/`.
 
-The **ai-bundle** container is now a lightweight pipeline worker (SQLite job poll + HTTP callbacks). It does **not** load Whisper or any LLM weights locally.
+## AI configuration (`config/ai.env`)
 
-**Privacy note:** intake audio, transcripts, and form data are sent to Hugging Face. For air-gapped use you would need local models (not supported in this RAM-constrained demo config).
+All LLM and ASR settings live in **`config/ai.env`** (copy from `config/ai.env.example`). Docker Compose loads this file for `api` and `ai-bundle`. Switch providers after deployment without rebuilding images.
+
+| Task | Default (cloud) | Config keys |
+|------|-----------------|-------------|
+| Transcription (ASR) | HF Whisper | `HF_ASR_MODEL`, `HF_API_TOKEN` |
+| NLP, triage, assistant | HF Llama | `LLM_PROVIDER`, `HF_MODEL`, `HF_API_BASE` |
+| Local LLM (post-deploy) | Ollama on VM | `LLM_PROVIDER=ollama`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL` |
+| Risk score | Statistical rules | Not LLM — see `docs/risk-scoring-framework.md` |
+
+**Initial deploy (cloud):** set `HF_API_TOKEN` in `config/ai.env`.  
+**Post-deploy (local LLM):** set `LLM_PROVIDER=ollama` and point `OLLAMA_BASE_URL` at host Ollama — see [`docs/VM-RUNBOOK.md`](docs/VM-RUNBOOK.md) §6.
+
+The **ai-bundle** container is a lightweight pipeline worker; it does not load model weights locally when using Hugging Face cloud.
+
+**Privacy note:** cloud mode sends audio/transcripts to Hugging Face. Local Ollama reduces LLM egress; ASR may still use HF until a local ASR path is added.
 
 ### Security (Hugging Face + demo stack)
 
@@ -129,16 +140,17 @@ The demo frontend shows **loading spinners** on all data-heavy pages and uses **
 | Script | Purpose |
 |--------|---------|
 | `scripts/package-docker.sh` | Create `dist/intake-demo.zip` (requires `demo/.env` with `HF_API_TOKEN`) |
-| `scripts/deploy-docker.sh` | Install from zip on VM (uses packaged `.env`) |
+| `scripts/deploy-docker.sh` | Install from zip on VM (uses packaged `.env` + `config/ai.env`) |
 | `scripts/up.sh` | `docker compose up` (requires `demo/.env` with HF token) |
 | `scripts/smoke.sh` | Health + auth checks |
 | `scripts/redeploy.sh` | Patch `api` / `frontend` / `ai-bundle` |
-| `scripts/install-host-nginx.sh` | Foundry route → `/etc/nginx/routes/` |
+| `scripts/install-host-nginx.sh` | Host route → `/etc/nginx/routes/` |
 
 ## Specifications & docs
 
 | Document | Purpose |
 |----------|---------|
+| `docs/VM-RUNBOOK.md` | **VM deploy, redeploy, AI provider switch, troubleshooting** |
 | `openspec/changes/demo-enhancements-2026-05/` | Change spec for this demo implementation |
 | `openspec/specs/` | Normative behavior (8 domains) |
 | `docs/risk-scoring-framework.md` | Statistical risk weights and formula |
@@ -147,12 +159,19 @@ The demo frontend shows **loading spinners** on all data-heavy pages and uses **
 | `Docs/TRACEABILITY.md` | PRD → API → OpenSpec map |
 | `openapi.yaml` (repo root) | REST contract |
 
-Migrations **001–007** run on API startup (includes `risk_framework` seed in **007**).
+Migrations **001–009** run on API startup (includes `risk_framework` seed in **007**, case search/linking in **009**).
+
+### Case search, linking, and demo reset
+
+- **Header search** — all roles can search by case number (`IR-YYYY-NNNN`) or child name. Screener/supervisor/worker can open results; admin sees metadata only.
+- **Case identity** — child name is the case title; case number is auto-generated and read-only.
+- **Related reports** — cases with the same child name + DOB are linked (not merged). Use the drawer on intake and case record pages.
+- **Demo reset** — System Admin → System Status → type `RESET` to wipe case data and artifacts (keeps triage/risk config and demo users). Reseeds sample linked cases.
 
 ## Architecture
 
 ```text
-Host nginx (HTTPS) → :4010/demo nginx → frontend + api
+Host nginx (HTTPS) → :11111/docker nginx → frontend + api (legacy Docker)
                                       ↘ ai-bundle (pipeline worker → HF ASR + LLM)
 Shared volume: /data/ait.db, /data/artifacts
 ```

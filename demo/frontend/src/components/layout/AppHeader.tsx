@@ -5,9 +5,18 @@ import { APP_TITLE_SHORT } from "../../constants/branding";
 import { C } from "../../theme/tokens";
 import { PAGE_LABELS, ROLES } from "../../constants/nav";
 import { PulseCircle } from "../atoms";
+import { CaseSearchBar } from "./CaseSearchBar";
 import type { UserRole } from "../../api/types";
 
-export function AppHeader({ role, page }: { role: UserRole; page: string }) {
+export function AppHeader({
+  role,
+  page,
+  onSearchOpenCase,
+}: {
+  role: UserRole;
+  page: string;
+  onSearchOpenCase?: (caseId: string, status: string) => void;
+}) {
   const { isAuthenticated } = useAuth();
   const ri = ROLES.find((r) => r.id === role);
   const [emergencyCount, setEmergencyCount] = useState(0);
@@ -65,6 +74,11 @@ export function AppHeader({ role, page }: { role: UserRole; page: string }) {
           )}
         </span>
       </div>
+
+      {onSearchOpenCase && (
+        <CaseSearchBar role={role} onOpenCase={onSearchOpenCase} />
+      )}
+
       {role !== "admin" && emergencyCount > 0 && (
         <div
           style={{

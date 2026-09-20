@@ -29,7 +29,9 @@ function buildAssistantContext(
   }
   const transcript = truncateForLlm(
     transcriptLines
-      .map((l) => `${l.speaker === "S" ? "Screener" : "Caller"}: ${l.text}`)
+      .map((l) =>
+        l.speaker === "L" ? l.text : `${l.speaker === "S" ? "Screener" : "Caller"}: ${l.text}`,
+      )
       .join("\n"),
     HF_MAX_TRANSCRIPT_CHARS,
   );
@@ -45,7 +47,7 @@ function buildAssistantContext(
 
 const router = Router();
 
-router.get("/cases/:caseId/transcript", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/transcript", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     await writeAudit({
@@ -69,7 +71,7 @@ router.get("/cases/:caseId/transcript", requireRoles("screener", "supervisor", "
   }
 });
 
-router.get("/cases/:caseId/risk", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/risk", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const { riskLabelForScore } = await import("../domain/risk/framework.js");
@@ -179,7 +181,7 @@ router.post("/cases/:caseId/risk/override", requireRoles("screener"), requireCas
   }
 });
 
-router.get("/cases/:caseId/triage-flags", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/triage-flags", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const { rows } = await query(
@@ -258,7 +260,7 @@ router.get(
   },
 );
 
-router.get("/cases/:caseId/assistant-messages", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/assistant-messages", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const { rows } = await query<{
@@ -370,7 +372,7 @@ router.get(
   },
 );
 
-router.get("/cases/:caseId/pipeline", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/pipeline", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const { rows } = await query<{ current_stage: string; stages: Record<string, string> }>(

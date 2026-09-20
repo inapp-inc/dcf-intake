@@ -721,3 +721,13 @@ STAGE_HANDLERS = {
     "documents": run_documents,
     "field_memo_transcribe": run_field_memo_transcribe,
 }
+
+
+def _register_live_handlers() -> None:
+    from . import live_pipeline
+
+    STAGE_HANDLERS["live_chunk"] = live_pipeline.run_live_chunk
+    STAGE_HANDLERS["live_end"] = live_pipeline.run_live_end
+
+
+_register_live_handlers()

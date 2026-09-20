@@ -1,5 +1,6 @@
 import * as formRepo from "../../repositories/form51aRepository.js";
 import { enqueuePipelineJob } from "../../services/redisClient.js";
+import { syncCaseIdentityFromForm } from "../../services/caseIdentityService.js";
 import { validateForCheckpoint } from "./completion.js";
 
 export async function completeForm51aCheckpoint(caseId: string): Promise<{
@@ -26,6 +27,7 @@ export async function completeForm51aCheckpoint(caseId: string): Promise<{
   }
 
   await formRepo.setCheckpointStatus(caseId, "complete");
+  await syncCaseIdentityFromForm(caseId);
   await enqueuePipelineJob(caseId, "background");
 
   return {

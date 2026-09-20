@@ -7,6 +7,8 @@ import { C } from "../theme/tokens";
 import { Chip, EmergBadge, RiskBadge } from "../components/atoms";
 import { PipelineStrip } from "../components/intake/PipelineStrip";
 import { AudioUpload, type TxState } from "../components/intake/AudioUpload";
+import { LiveCallPanel, type LiveState } from "../components/intake/LiveCallPanel";
+import { useVadRecorder } from "../hooks/useVadRecorder";
 import { TranscriptPanel } from "../components/intake/TranscriptPanel";
 import { FormSection } from "../components/intake/FormSection";
 import { FormPopulatingCard } from "../components/intake/FormPopulatingCard";
@@ -16,7 +18,14 @@ import { RiskScoreCard } from "../components/intake/RiskScoreCard";
 import { TriageSection } from "../components/intake/TriageSection";
 import { IntakeProgressTracker } from "../components/intake/IntakeProgressTracker";
 import { AIAssistant } from "../components/intake/AIAssistant";
-import { formatCaseTitle, formatCheckpointStatus, formatInitiatedTime } from "../utils/format";
+import { LinkedCasesDrawer, RelatedCasesBanner } from "../components/cases/LinkedCasesDrawer";
+import {
+  formatCaseName,
+  formatCaseNumber,
+  formatCheckpointStatus,
+  formatInitiatedTime,
+} from "../utils/format";
+import type { RelatedCaseSummary } from "../api/types";
 import { PIPELINE_POLL_MS } from "../config/timeouts";
 import { LoadingBlock, LoadingSpinner } from "../components/ui/LoadingSpinner";
 import type {
@@ -142,7 +151,10 @@ export function IntakePage({
 }) {
   const { isAuthenticated } = useAuth();
   const [txState, setTxState] = useState<TxState>("idle");
+  const [liveState, setLiveState] = useState<LiveState>("idle");
+  const [liveError, setLiveError] = useState<string | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const liveSessionIdRef = useRef<string | null>(null);
   const [form, setForm] = useState<Form51A | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [risk, setRisk] = useState<RiskAssessment | null>(null);
@@ -153,6 +165,9 @@ export function IntakePage({
   const [openSec, setOpenSec] = useState<SectionId | null>("child");
   const [error, setError] = useState<string | null>(null);
   const [externalId, setExternalId] = useState<string | null>(null);
+  const [childDisplay, setChildDisplay] = useState<string | null>(null);
+  const [relatedCases, setRelatedCases] = useState<RelatedCaseSummary[]>([]);
+  const [relatedDrawerOpen, setRelatedDrawerOpen] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [pipeline, setPipeline] = useState<PipelineStatus | null>(null);
   const [emergency, setEmergency] = useState(false);
@@ -171,6 +186,29 @@ export function IntakePage({
   const aiRef = useRef<HTMLDivElement>(null);
   const patchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const handleLiveChunk = useCallback(
+    async (blob: Blob, meta: { chunkIndex: number; durationMs: number }) => {
+      if (!caseId || !liveSessionIdRef.current) return;
+      try {
+        await api.uploadLiveChunk(caseId, blob, {
+          sessionId: liveSessionIdRef.current,
+          chunkIndex: meta.chunkIndex,
+          durationMs: meta.durationMs,
+        });
+        setTxState("processing");
+      } catch (e) {
+        setLiveError(e instanceof ApiError ? e.message : "Failed to upload audio chunk");
+      }
+    },
+    [caseId],
+  );
+
+  const vadEnabled = liveState === "recording";
+  const { level, error: vadError, start: startMic, stop: stopMic } = useVadRecorder({
+    enabled: vadEnabled,
+    onChunk: handleLiveChunk,
+  });
+
   const refreshAll = useCallback(async (opts?: { silent?: boolean }) => {
     if (!isAuthenticated || !caseId) return;
     if (!opts?.silent) setPageLoading(true);
@@ -178,9 +216,10 @@ export function IntakePage({
       const caseMeta = await api.getCase(caseId).catch(() => null);
       if (caseMeta?.externalId) setExternalId(caseMeta.externalId);
       if (caseMeta) {
+        setChildDisplay(caseMeta.childDisplay ?? null);
+        setRelatedCases(caseMeta.relatedCases ?? []);
         setEmergency(caseMeta.emergency);
-        const created = (caseMeta as { createdAt?: string }).createdAt;
-        if (created) setInitiatedAt(created);
+        if (caseMeta.createdAt) setInitiatedAt(caseMeta.createdAt);
       }
 
       const [f, t, m, p] = await Promise.all([
@@ -199,6 +238,18 @@ export function IntakePage({
       setMessages(m);
       setPipeline(p);
       setTxState((prev) => syncTxStateFromPipeline(prev, p.stages));
+      try {
+        const live = await api.getLiveStatus(caseId);
+        if (live.status === "recording") {
+          liveSessionIdRef.current = live.sessionId ?? null;
+          setLiveState("recording");
+          setTxState("processing");
+        } else if (live.status === "ended" && live.chunkCount && live.chunkCount > 0) {
+          setLiveState("complete");
+        }
+      } catch {
+        /* live status optional */
+      }
       try {
         const r = await api.getRisk(caseId);
         setRisk(r);
@@ -249,15 +300,17 @@ export function IntakePage({
       form?.checkpointStatus === "ai_populating" ||
       nlpReextracting;
     const processing =
+      liveState === "recording" ||
       txState === "processing" ||
       txState === "uploading" ||
       pipeline?.stages?.transcription === "running" ||
+      pipeline?.stages?.live_transcription === "running" ||
       pipelineStillRunning(pipeline?.stages) ||
       nlpRunning;
     if (!processing && !awaitingNlp) return;
     const id = setInterval(() => void refreshAll({ silent: true }), PIPELINE_POLL_MS);
     return () => clearInterval(id);
-  }, [isAuthenticated, caseId, txState, pipeline, form?.checkpointStatus, nlpReextracting, refreshAll]);
+  }, [isAuthenticated, caseId, txState, liveState, pipeline, form?.checkpointStatus, nlpReextracting, refreshAll]);
 
   useEffect(() => {
     if (!nlpReextracting) return;
@@ -282,7 +335,7 @@ export function IntakePage({
         setTxState((s) => (s === "idle" ? "processing" : s));
         setTranscript((prev) => {
           const next = {
-            speaker: (ev.speaker === "S" ? "S" : "C") as "S" | "C",
+            speaker: (ev.speaker === "S" ? "S" : ev.speaker === "L" ? "L" : "C") as "S" | "C" | "L",
             text: ev.text!,
             keywordFlag: ev.keywordFlag,
           };
@@ -312,7 +365,7 @@ export function IntakePage({
   useCaseWebSocket(caseId, onWsEvent);
 
   const handleUpload = async (file: File) => {
-    if (!isAuthenticated || !caseId) return;
+    if (!isAuthenticated || !caseId || liveState !== "idle") return;
     setUploadFile(file);
     setTxState("uploading");
     setError(null);
@@ -322,6 +375,40 @@ export function IntakePage({
     } catch (e) {
       setTxState("idle");
       setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Upload failed");
+    }
+  };
+
+  const handleLiveStart = async () => {
+    if (!isAuthenticated || !caseId || txState !== "idle") return;
+    setLiveError(null);
+    setError(null);
+    setLiveState("starting");
+    try {
+      const session = await api.startLiveSession(caseId);
+      liveSessionIdRef.current = session.sessionId ?? null;
+      await startMic();
+      setLiveState("recording");
+      setTxState("processing");
+      setPipeline(session);
+      await refreshAssistant();
+    } catch (e) {
+      liveSessionIdRef.current = null;
+      setLiveState("idle");
+      setLiveError(e instanceof ApiError ? e.message : "Could not start live session");
+    }
+  };
+
+  const handleLiveStop = async () => {
+    if (!caseId) return;
+    setLiveState("stopping");
+    try {
+      await stopMic();
+      await api.endLiveSession(caseId);
+      setLiveState("complete");
+      await refreshAll({ silent: true });
+    } catch (e) {
+      setLiveError(e instanceof ApiError ? e.message : "Could not end live session");
+      setLiveState("recording");
     }
   };
 
@@ -428,7 +515,12 @@ export function IntakePage({
   const submitReady = canSubmit || canComplete;
   const submitStatus = form ? submitStatusMessage(form) : null;
   const pipelineMonitoring =
-    txState !== "idle" || pipelineStillRunning(pipeline?.stages) || nlpBusy;
+    liveState === "recording" ||
+    txState !== "idle" ||
+    pipelineStillRunning(pipeline?.stages) ||
+    nlpBusy;
+  const uploadDisabled = liveState !== "idle";
+  const liveDisabled = txState !== "idle";
 
   if (!caseId) {
     return (
@@ -450,8 +542,15 @@ export function IntakePage({
               New Initial Report
             </div>
             <div style={{ fontSize: 19, fontWeight: 700, color: C.textDark, fontFamily: "'Fraunces', serif" }}>
-              {externalId ? formatCaseTitle(externalId) : form?.caseId ? formatCaseTitle(undefined, form.caseId) : "Creating case…"}
+              {formatCaseName(childDisplay ?? form?.sections.child.fields.child_name?.value)}
             </div>
+            {externalId && (
+              <span style={{ display: "inline-block", marginTop: 4 }}>
+                <Chip color={C.navy} bg={C.bg}>
+                  Case #{formatCaseNumber(externalId)}
+                </Chip>
+              </span>
+            )}
           </div>
           {emergency && <EmergBadge />}
           {risk?.score != null && <RiskBadge score={risk.score} />}
@@ -476,6 +575,8 @@ export function IntakePage({
           </button>
         </div>
 
+        <RelatedCasesBanner count={relatedCases.length} onOpen={() => setRelatedDrawerOpen(true)} />
+
         {error && (
           <div className="card" style={{ padding: 12, background: C.coralPale, color: C.coral, fontSize: 13 }}>
             {error}
@@ -494,7 +595,19 @@ export function IntakePage({
           </div>
         )}
 
-        <AudioUpload state={txState} file={uploadFile} onUpload={handleUpload} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ opacity: uploadDisabled ? 0.55 : 1, pointerEvents: uploadDisabled ? "none" : "auto" }}>
+            <AudioUpload state={txState} file={uploadFile} onUpload={handleUpload} />
+          </div>
+          <LiveCallPanel
+            state={liveState}
+            level={level}
+            error={liveError ?? vadError}
+            disabled={liveDisabled}
+            onStart={() => void handleLiveStart()}
+            onStop={() => void handleLiveStop()}
+          />
+        </div>
 
         {form && (
           <IntakeProgressTracker
@@ -502,6 +615,7 @@ export function IntakePage({
             pipeline={pipeline}
             hasTranscript={transcript.length > 0}
             hasAudio={txState !== "idle"}
+            liveActive={liveState === "recording" || liveState === "complete"}
           />
         )}
 
@@ -526,7 +640,10 @@ export function IntakePage({
           icon="📝"
           defaultExpanded
         >
-          <TranscriptPanel segments={transcript} live={txState === "processing"} />
+          <TranscriptPanel
+            segments={transcript}
+            live={liveState === "recording" || (txState === "processing" && liveState !== "idle")}
+          />
         </IntakeCollapsibleSection>
 
         <div style={{ display: "flex", gap: 14, alignItems: "center", padding: "0 2px" }}>
@@ -723,6 +840,16 @@ export function IntakePage({
           }}
         />
       </div>
+
+      <LinkedCasesDrawer
+        open={relatedDrawerOpen}
+        relatedCases={relatedCases}
+        onClose={() => setRelatedDrawerOpen(false)}
+        onOpenCase={(id) => {
+          setRelatedDrawerOpen(false);
+          onCaseId(id);
+        }}
+      />
     </div>
   );
 }

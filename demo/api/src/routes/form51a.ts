@@ -14,6 +14,7 @@ import {
 import { renderOfficial51AHtml, officialFormSaveUrl } from "../adapters/officialFormRenderer.js";
 import { writeAudit } from "../services/auditService.js";
 import { enqueuePipelineJob } from "../services/redisClient.js";
+import { syncCaseIdentityFromForm } from "../services/caseIdentityService.js";
 
 const router = Router();
 
@@ -33,7 +34,7 @@ async function officialFormContext(caseId: string) {
   };
 }
 
-router.get("/cases/:caseId/form51a", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/form51a", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const form = await formRepo.loadForm51A(caseId);
@@ -43,7 +44,7 @@ router.get("/cases/:caseId/form51a", requireRoles("screener", "supervisor", "wor
   }
 });
 
-router.get("/cases/:caseId/form51a/document", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/form51a/document", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const ctx = await officialFormContext(caseId);
@@ -73,6 +74,7 @@ router.patch("/cases/:caseId/form51a", requireRoles("screener"), requireCaseAcce
     }
     const caseId = paramId(req, "caseId");
     await formRepo.updateFields(caseId, parsed.data.fields);
+    await syncCaseIdentityFromForm(caseId);
     const status = await formRepo.getCheckpointStatus(caseId);
     if (status === "not_started" || status === "ai_populating") {
       await formRepo.setCheckpointStatus(caseId, "incomplete");
@@ -146,7 +148,7 @@ router.post("/cases/:caseId/form51a/complete-checkpoint", requireRoles("screener
   }
 });
 
-router.get("/cases/:caseId/form51a/official", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/form51a/official", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     await writeAudit({
@@ -206,7 +208,7 @@ router.post(
   },
 );
 
-router.get("/cases/:caseId/form51a/official/field-map", requireRoles("screener", "supervisor", "worker"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/form51a/official/field-map", requireRoles("screener", "supervisor", "worker"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const ctx = await officialFormContext(caseId);

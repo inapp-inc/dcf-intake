@@ -25,8 +25,8 @@ export function TranscriptPanel({
       {segments.length === 0 ? (
         <p style={{ fontSize: 12, color: C.textLight, margin: 0, lineHeight: 1.5 }}>
           {live
-            ? "Transcribing call — speaker-attributed lines will appear here…"
-            : "No transcript yet. Upload a call recording to generate a speaker-attributed transcript."}
+            ? "Live transcription — lines appear every ~15 seconds or on a pause…"
+            : "No transcript yet. Upload a recording or start a live demo call."}
         </p>
       ) : (
         <div
@@ -41,7 +41,10 @@ export function TranscriptPanel({
             scrollPaddingTop: 8,
           }}
         >
-          {segments.map((line, i) => (
+          {segments.map((line, i) => {
+            const isLive = line.speaker === "L";
+            const badgeLabel = isLive ? "Live" : line.speaker;
+            return (
           <div
             key={i}
             style={{
@@ -57,19 +60,20 @@ export function TranscriptPanel({
             <div
               style={{
                 flexShrink: 0,
-                width: 22,
+                minWidth: isLive ? 36 : 22,
                 height: 22,
-                borderRadius: "50%",
-                background: line.speaker === "S" ? C.navy : C.tealPale,
-                color: line.speaker === "S" ? "#fff" : C.teal,
+                borderRadius: isLive ? 6 : "50%",
+                padding: isLive ? "0 6px" : 0,
+                background: isLive ? C.amberPale : line.speaker === "S" ? C.navy : C.tealPale,
+                color: isLive ? C.amber : line.speaker === "S" ? "#fff" : C.teal,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 9,
+                fontSize: isLive ? 8 : 9,
                 fontWeight: 700,
               }}
             >
-              {line.speaker}
+              {badgeLabel}
             </div>
             <div style={{ flex: 1, fontSize: 12, lineHeight: 1.65, color: line.keywordFlag ? C.coral : C.textMid }}>
               {line.text}
@@ -90,7 +94,8 @@ export function TranscriptPanel({
               )}
             </div>
           </div>
-        ))}
+            );
+          })}
         </div>
       )}
     </>

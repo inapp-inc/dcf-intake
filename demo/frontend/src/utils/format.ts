@@ -45,8 +45,23 @@ export function formatInitiatedTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+/** Read-only auto-generated case number label. */
+export function formatCaseNumber(externalId?: string, caseId?: string): string {
+  if (externalId) return externalId;
+  if (caseId) return caseId.slice(0, 8);
+  return "Pending";
+}
+
+/** Legacy helper — prefer formatCaseNumber for identifiers. */
 export function formatCaseTitle(externalId?: string, caseId?: string): string {
   if (externalId) return `Case #${externalId}`;
   if (caseId) return `Case ${caseId.slice(0, 8)}…`;
+  return "New case";
+}
+
+/** Primary case label: child name; falls back when not yet captured. */
+export function formatCaseName(childDisplay?: string | null): string {
+  const name = childDisplay?.trim();
+  if (name) return name;
   return "New case";
 }

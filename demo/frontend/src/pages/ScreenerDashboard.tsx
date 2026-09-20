@@ -8,7 +8,7 @@ import { PageShell } from "../components/ui/PageShell";
 import { QueryState } from "../components/ui/QueryState";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { screenerQueueStats } from "../utils/caseStats";
-import { formatCaseTitle, formatCheckpointStatus, formatStatus, formatTimeAgo } from "../utils/format";
+import { formatCaseName, formatCaseNumber, formatCheckpointStatus, formatStatus, formatTimeAgo } from "../utils/format";
 import { filterScreenerCases, SCREENER_FILTER_OPTIONS, type ScreenerQueueFilter } from "../utils/navOptions";
 import type { CaseSummary } from "../api/types";
 
@@ -155,9 +155,9 @@ export function ScreenerDashboard({
               >
                 {c.emergency && <PulseCircle color={C.coral} />}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.textDark }}>{c.childDisplay ?? "New case"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.textDark }}>{formatCaseName(c.childDisplay)}</div>
                   <div style={{ fontSize: 11, color: C.textLight }}>
-                    {formatCaseTitle(c.externalId)} · {formatTimeAgo(c.updatedAt)} ago
+                    Case #{formatCaseNumber(c.externalId)} · {formatTimeAgo(c.updatedAt)} ago
                   </div>
                 </div>
                 {c.riskScore != null && <RiskBadge score={c.riskScore} />}

@@ -11,12 +11,10 @@ set -euo pipefail
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${DEMO_DIR}"
 
-if [[ -f .env ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
-fi
+# shellcheck disable=SC1091
+source "${DEMO_DIR}/scripts/lib/env-helpers.sh"
+ensure_ai_env_file "${DEMO_DIR}" 2>/dev/null || true
+source_env_files "${DEMO_DIR}"
 
 SERVICES=()
 if [[ $# -eq 0 ]]; then

@@ -94,6 +94,90 @@ def set_checkpoint_status(case_id: str, status: str) -> None:
         )
 
 
+def get_live_session_status(case_id: str) -> str:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT live_session_status FROM cases WHERE id = ?",
+            (case_id,),
+        ).fetchone()
+    return row["live_session_status"] if row else "idle"
+
+
+def append_transcript_segment(case_id: str, seg: dict[str, Any]) -> int:
+    """Insert one transcript line; returns zero-based index for WS events."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS c FROM transcript_segments WHERE case_id = ?",
+            (case_id,),
+        ).fetchone()
+        index = int(row["c"]) if row else 0
+        conn.execute(
+            """
+            INSERT INTO transcript_segments (id, case_id, speaker, text, offset_ms, keyword_flag)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            bind_params(
+                str(uuid.uuid4()),
+                case_id,
+                seg["speaker"],
+                seg["text"],
+                seg.get("offset_ms"),
+                bool(seg.get("keyword_flag")),
+            ),
+        )
+    return index
+
+
+def get_transcript_segments(case_id: str) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT speaker, text, offset_ms, keyword_flag
+            FROM transcript_segments
+            WHERE case_id = ?
+            ORDER BY COALESCE(offset_ms, 999999999), created_at
+            """,
+            (case_id,),
+        ).fetchall()
+    return [
+        {
+            "speaker": r["speaker"],
+            "text": r["text"],
+            "offset_ms": r["offset_ms"],
+            "keyword_flag": bool(r["keyword_flag"]),
+        }
+        for r in rows
+    ]
+
+
+def get_form_field_snapshot(case_id: str) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT section_id, field_id, label, required, value, source, ai_confidence, confirmed_by_human
+            FROM form_51a_fields
+            WHERE case_id = ?
+            ORDER BY section_id, field_id
+            """,
+            (case_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def recent_coach_field_jumps(case_id: str, limit: int = 5) -> list[str]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT field_jump FROM assistant_messages
+            WHERE case_id = ? AND field_jump IS NOT NULL AND msg_type IN ('warning', 'info')
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (case_id, limit),
+        ).fetchall()
+    return [str(r["field_jump"]) for r in rows if r["field_jump"]]
+
+
 def save_transcript_segments(case_id: str, segments: list[dict[str, Any]]) -> None:
     with connect() as conn:
         conn.execute("DELETE FROM transcript_segments WHERE case_id = ?", (case_id,))

@@ -55,6 +55,26 @@ export interface CaseSummary {
   updatedAt: string;
   briefingOpenedAt?: string | null;
   report51bStatus?: string | null;
+  createdAt?: string;
+  relatedCases?: RelatedCaseSummary[];
+}
+
+export interface CaseSearchResult {
+  caseId: string;
+  externalId?: string;
+  childDisplay?: string;
+  status: string;
+  updatedAt: string;
+  relatedCount?: number;
+}
+
+export interface RelatedCaseSummary {
+  caseId: string;
+  externalId?: string;
+  childDisplay?: string;
+  status: string;
+  createdAt: string;
+  reporterName?: string | null;
 }
 
 export interface ScreeningQueueItem {
@@ -155,9 +175,16 @@ export interface ModelInfo {
 }
 
 export interface TranscriptSegment {
-  speaker: "S" | "C";
+  speaker: "S" | "C" | "L";
   text: string;
   keywordFlag?: boolean;
+}
+
+export interface LiveSessionStatus {
+  status: "idle" | "recording" | "ended";
+  sessionId?: string | null;
+  startedAt?: string | null;
+  chunkCount?: number;
 }
 
 export interface TriageFlag {

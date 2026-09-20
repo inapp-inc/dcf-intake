@@ -1,5 +1,6 @@
 import base64
 import logging
+import re
 import time
 from typing import Any, Callable
 
@@ -143,6 +144,42 @@ def _split_plain_text(text: str) -> list[str]:
     if not parts:
         return [text]
     return [p if p.endswith(".") else f"{p}." for p in parts]
+
+
+def _text_from_response(data: dict[str, Any]) -> str:
+    chunks = data.get("chunks") or []
+    parts: list[str] = []
+    if chunks:
+        for chunk in chunks:
+            text = str(chunk.get("text", "")).strip()
+            if text:
+                parts.append(text)
+    if not parts:
+        text = str(data.get("text", "")).strip()
+        if text:
+            parts.append(text)
+    return re.sub(r"\s+", " ", " ".join(parts)).strip()
+
+
+def transcribe_live_chunk(
+    audio_bytes: bytes,
+    suffix: str = ".webm",
+    offset_ms: int = 0,
+) -> dict[str, Any] | None:
+    """Transcribe one VAD segment as a single Live line."""
+    if not audio_bytes:
+        return None
+    data = _request_transcription(audio_bytes, suffix)
+    text = _text_from_response(data)
+    if not text:
+        return None
+    kw = len(scan_keywords(text)) > 0
+    return {
+        "speaker": "L",
+        "text": text,
+        "offset_ms": offset_ms,
+        "keyword_flag": kw,
+    }
 
 
 def transcribe_audio(

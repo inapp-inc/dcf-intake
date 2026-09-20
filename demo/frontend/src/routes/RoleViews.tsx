@@ -71,7 +71,12 @@ export function RoleViews(props: RoleViewsProps) {
   if (page === "case-record" && caseRecordId) {
     return (
       <Lazy>
-        <Pages.CaseRecordPage caseId={caseRecordId} role={role} onBack={onCaseRecordBack} />
+        <Pages.CaseRecordPage
+          caseId={caseRecordId}
+          role={role}
+          onBack={onCaseRecordBack}
+          onOpenCase={(id) => onNav("case-record", id)}
+        />
       </Lazy>
     );
   }

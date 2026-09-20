@@ -3,16 +3,20 @@
 set -euo pipefail
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${DEMO_DIR}"
-if [[ -f .env ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
-fi
+# shellcheck disable=SC1091
+source "${DEMO_DIR}/scripts/lib/env-helpers.sh"
+source_env_files "${DEMO_DIR}"
 
-PORT="${AIT_HTTP_PORT:-4010}"
 BASE="${APP_BASE_PATH:-/intake}"
-API="${SMOKE_API_BASE:-http://127.0.0.1:${PORT}${BASE}/api/v1}"
+# PM2: API on loopback :11110; Docker: nginx on :11111 with path prefix
+if [[ -n "${SMOKE_API_BASE:-}" ]]; then
+  API="${SMOKE_API_BASE}"
+elif [[ "${DEPLOY_MODE:-}" == "pm2" ]]; then
+  API="http://127.0.0.1:${PORT:-11110}/api/v1"
+else
+  PORT="${AIT_HTTP_PORT:-11111}"
+  API="http://127.0.0.1:${PORT}${BASE}/api/v1"
+fi
 
 json_field() {
   node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(${1}||'')}catch{process.exit(1)}})"

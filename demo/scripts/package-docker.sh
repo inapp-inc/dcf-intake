@@ -21,11 +21,13 @@ command -v zip >/dev/null 2>&1 || {
 "${DEMO_DIR}/scripts/verify-before-package.sh"
 
 if [[ ! -f "${DEMO_DIR}/.env" ]]; then
-  echo "ERROR: demo/.env is required for packaging (copy from .env.example and set HF_API_TOKEN)." >&2
+  echo "ERROR: demo/.env is required for packaging (copy from .env.example)." >&2
   exit 1
 fi
-if ! validate_hf_env "${DEMO_DIR}/.env"; then
-  echo "ERROR: Fix HF_API_TOKEN in demo/.env before packaging." >&2
+ensure_ai_env_file "${DEMO_DIR}"
+apply_ai_env_defaults "${DEMO_DIR}/config/ai.env" "${AI_DEFAULTS}"
+if ! validate_ai_env "${DEMO_DIR}/config/ai.env"; then
+  echo "ERROR: Fix config/ai.env before packaging (HF_API_TOKEN or Ollama settings)." >&2
   exit 1
 fi
 
@@ -93,13 +95,14 @@ for p in "${INCLUDE_PATHS[@]}"; do
 done
 
 cp "${DEMO_DIR}/.env" "${PKG_ROOT}/.env"
-echo "Included demo/.env in deployment package (HF token + config)"
+cp "${DEMO_DIR}/config/ai.env" "${PKG_ROOT}/config/ai.env"
+echo "Included demo/.env and config/ai.env in deployment package"
 
 chmod +x "${PKG_ROOT}/scripts/"*.sh 2>/dev/null || true
 chmod +x "${PKG_ROOT}/scripts/lib/"*.sh 2>/dev/null || true
 
 PKG_PORT="$(env_value "${DEMO_DIR}/.env" AIT_HTTP_PORT)"
-PKG_PORT="${PKG_PORT:-4010}"
+PKG_PORT="${PKG_PORT:-11111}"
 
 cat > "${PKG_ROOT}/DEPLOY_README.txt" <<EOF
 Child Welfare Intake Demo Docker package (SQLite + Hugging Face AI)
@@ -111,18 +114,18 @@ Deploy on the destination host:
 Stack: 3 containers — nginx+frontend, api (SQLite), ai-bundle (pipeline worker)
   All AI (ASR + LLM) runs on Hugging Face — no local model RAM.
 
-Public URL (default): https://foundry.inapp.com/intake/
+Public URL (default): https://client-demo.inapp.com/intake/
   APP_BASE_PATH=/intake
   Host nginx: proxy_pass http://127.0.0.1:${PKG_PORT}/intake/
 
-This package includes .env with HF_API_TOKEN preconfigured.
-Model defaults: config/ai-defaults.env
-  LLM: ${HF_MODEL}
-  ASR: ${HF_ASR_MODEL}
+This package includes .env + config/ai.env (AI provider + models).
+  Provider: $(env_value "${DEMO_DIR}/config/ai.env" LLM_PROVIDER)
+  LLM: $(env_value "${DEMO_DIR}/config/ai.env" HF_MODEL)
+  ASR: $(env_value "${DEMO_DIR}/config/ai.env" HF_ASR_MODEL)
 
 Scripts (in scripts/):
   deploy-docker.sh      — install from zip (+ host nginx route if sudo)
-  install-host-nginx.sh — Foundry /etc/nginx/routes/<route>.conf
+  install-host-nginx.sh — /etc/nginx/routes/<route>.conf on client-demo host
   package-docker.sh     — rebuild zip (on build machine)
   redeploy.sh           — patch api|frontend|ai-bundle after code changes
   smoke.sh              — health + auth smoke test

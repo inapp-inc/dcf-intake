@@ -177,11 +177,33 @@ export async function mergeNlpFields(
     confidence: number;
     threshold: number;
   }[],
+  opts?: { incremental?: boolean },
 ): Promise<void> {
   for (const f of fields) {
     const effectiveConfidence = f.value.trim() && f.confidence <= 0 ? 0.75 : f.confidence;
     const effectiveThreshold = f.value.trim() ? Math.min(f.threshold, 0.45) : f.threshold;
     if (effectiveConfidence < effectiveThreshold) continue;
+
+    if (opts?.incremental) {
+      const { rows } = await query<{
+        value: string;
+        source: string;
+        confirmed_by_human: boolean | number;
+        ai_confidence: number | null;
+      }>(
+        `SELECT value, source, confirmed_by_human, ai_confidence
+         FROM form_51a_fields WHERE case_id = $1 AND section_id = $2 AND field_id = $3`,
+        [caseId, f.sectionId, f.fieldId],
+      );
+      const existing = rows[0];
+      if (existing) {
+        if (existing.source === "human" && existing.value.trim()) continue;
+        if (asBoolean(existing.confirmed_by_human)) continue;
+        const prevConf = existing.ai_confidence ?? 0;
+        if (existing.value.trim() && effectiveConfidence <= prevConf) continue;
+      }
+    }
+
     await query(
       `UPDATE form_51a_fields
        SET value = $4, source = 'ai', ai_confidence = $5, confirmed_by_human = 0, missing = 0

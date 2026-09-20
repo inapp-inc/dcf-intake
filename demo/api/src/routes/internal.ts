@@ -11,6 +11,7 @@ import type { SectionId } from "../domain/form51a/fieldCatalog.js";
 const router = Router();
 
 const mergeSchema = z.object({
+  incremental: z.boolean().optional(),
   fields: z.array(
     z.object({
       sectionId: z.enum(["child", "incident", "reporter", "household", "filing"]),
@@ -45,7 +46,10 @@ router.post("/cases/:caseId/nlp-merge", async (req, res, next) => {
         confidence: f.confidence,
         threshold: f.threshold ?? config.nlpConfidenceThreshold,
       })),
+      { incremental: parsed.data.incremental ?? false },
     );
+    const { syncCaseIdentityFromForm } = await import("../services/caseIdentityService.js");
+    await syncCaseIdentityFromForm(caseId);
     const { syncIntakeToDocument } = await import("../services/form51aDocumentService.js");
     await syncIntakeToDocument(caseId);
     await writeAudit({

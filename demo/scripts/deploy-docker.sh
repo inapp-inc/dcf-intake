@@ -11,9 +11,9 @@ RUN_SMOKE="${RUN_SMOKE:-1}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 INSTALL_HOST_NGINX="${INSTALL_HOST_NGINX:-1}"
 
-AIT_HTTP_PORT="${AIT_HTTP_PORT:-4010}"
+AIT_HTTP_PORT="${AIT_HTTP_PORT:-11111}"
 APP_BASE_PATH="${APP_BASE_PATH:-/intake}"
-PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-https://foundry.inapp.com}"
+PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-https://client-demo.inapp.com}"
 VITE_BASE_PATH="${VITE_BASE_PATH:-${APP_BASE_PATH}/}"
 VITE_API_BASE_URL="${VITE_API_BASE_URL:-${APP_BASE_PATH}/api/v1}"
 HF_ASR_API_URL="${HF_ASR_API_URL:-}"
@@ -30,9 +30,9 @@ Options:
   --env-file PATH       Use/write this .env instead of ./.env in install tree
 
 Environment (optional overrides — packaged .env is used when present):
-  AIT_HTTP_PORT         Host port for app nginx HTTP (default 4010)
+  AIT_HTTP_PORT         Host port for app nginx HTTP (default 11111)
   APP_BASE_PATH         URL prefix (default /intake)
-  PUBLIC_ORIGIN         https://foundry.inapp.com
+  PUBLIC_ORIGIN         https://client-demo.inapp.com
   HF_API_TOKEN          Override Hugging Face token
   LLM_PROVIDER          huggingface (default)
   HF_MODEL              LLM model (default meta-llama/Llama-3.1-8B-Instruct)
@@ -84,13 +84,13 @@ choose_http_port() {
     return
   fi
   local p
-  for p in $(seq 4010 4015); do
+  for p in $(seq 11111 11116); do
     if is_port_free "$p"; then
       echo "$p"
       return
     fi
   done
-  echo "No free port in 4010-4015." >&2
+  echo "No free port in 11111-11116." >&2
   exit 1
 }
 
@@ -110,9 +110,11 @@ fi
 # shellcheck disable=SC1091
 source "${ROOT}/scripts/lib/env-helpers.sh"
 AI_DEFAULTS="${ROOT}/config/ai-defaults.env"
+AI_ENV_FILE="${ROOT}/config/ai.env"
 load_ai_defaults "${AI_DEFAULTS}"
 
 ENV_FILE="${ENV_FILE_OVERRIDE:-${ROOT}/.env}"
+ensure_ai_env_file "${ROOT}"
 AIT_HTTP_PORT="$(choose_http_port "${AIT_HTTP_PORT}")"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -121,7 +123,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   cp "${ROOT}/.env.example" "$ENV_FILE"
   set_env_value "$ENV_FILE" "JWT_SECRET" "$JWT_SECRET_VALUE"
   set_env_value "$ENV_FILE" "INTERNAL_API_KEY" "$INTERNAL_KEY_VALUE"
-  echo "Created ${ENV_FILE} from .env.example (set HF_API_TOKEN for AI features)"
+  echo "Created ${ENV_FILE} from .env.example"
+  echo "Created ${AI_ENV_FILE} from ai.env.example (set HF_API_TOKEN or LLM_PROVIDER=ollama)"
 else
   echo "Using env file: ${ENV_FILE}"
 fi
@@ -134,8 +137,8 @@ set_env_value "$ENV_FILE" "VITE_API_BASE_URL" "$VITE_API_BASE_URL"
 set_env_value "$ENV_FILE" "CORS_ORIGIN" "${CORS_ORIGIN:-${PUBLIC_ORIGIN}}"
 set_env_value "$ENV_FILE" "NODE_ENV" "production"
 
-apply_ai_env_defaults "$ENV_FILE" "$AI_DEFAULTS"
-preserve_hf_token "$ENV_FILE" || true
+apply_ai_env_defaults "$AI_ENV_FILE" "$AI_DEFAULTS"
+preserve_hf_token "$AI_ENV_FILE" || true
 
 chmod +x "${ROOT}/scripts/"*.sh 2>/dev/null || true
 chmod +x "${ROOT}/scripts/lib/"*.sh 2>/dev/null || true
@@ -143,9 +146,9 @@ chmod +x "${ROOT}/scripts/lib/"*.sh 2>/dev/null || true
 cd "${ROOT}"
 export DOCKER_BUILDKIT=1
 # shellcheck disable=SC1091
-set -a && source "$ENV_FILE" && set +a
+source_env_files "${ROOT}"
 
-validate_hf_env "$ENV_FILE" || echo "  → Edit ${ENV_FILE} or pass HF_API_TOKEN=… when deploying." >&2
+validate_ai_env "$AI_ENV_FILE" || echo "  → Edit ${AI_ENV_FILE} (HF_API_TOKEN or Ollama settings)." >&2
 
 if [[ "${SKIP_BUILD}" -eq 0 ]]; then
   docker compose build
@@ -171,8 +174,10 @@ UI_LOCAL="http://127.0.0.1:${AIT_HTTP_PORT}${APP_BASE_PATH}/"
 API_LOCAL="http://127.0.0.1:${AIT_HTTP_PORT}${APP_BASE_PATH}/api/v1"
 PUBLIC_UI="${PUBLIC_ORIGIN}${APP_BASE_PATH}/"
 HF_STATUS="configured"
-if [[ -z "$(env_value "$ENV_FILE" HF_API_TOKEN)" ]]; then
-  HF_STATUS="MISSING — set HF_API_TOKEN in ${ENV_FILE}"
+if [[ "$(env_value "$AI_ENV_FILE" LLM_PROVIDER)" == "ollama" ]]; then
+  HF_STATUS="Ollama mode — see OLLAMA_BASE_URL in ${AI_ENV_FILE}"
+elif [[ -z "$(env_value "$AI_ENV_FILE" HF_API_TOKEN)" ]]; then
+  HF_STATUS="MISSING — set HF_API_TOKEN in ${AI_ENV_FILE}"
 fi
 
 if [[ "${INSTALL_HOST_NGINX}" -eq 1 ]]; then
@@ -185,25 +190,27 @@ cat <<EOF
 
 Deployed ${APP_NAME}
 Install dir: ${ROOT}
-Env file:      ${ENV_FILE}
+Env files:     ${ENV_FILE}
+               ${AI_ENV_FILE}
 
 Host port:
   HTTP (app nginx): ${AIT_HTTP_PORT}  → use for host HTTPS proxy
 
 UI (local):    ${UI_LOCAL}
-UI (Foundry):  ${PUBLIC_UI}
+UI (public):   ${PUBLIC_UI}
 Health:        ${API_LOCAL}/health
 
-AI (Hugging Face):
-  LLM: ${HF_MODEL}
-  ASR: ${HF_ASR_MODEL}
+AI (config/ai.env):
+  Provider: ${LLM_PROVIDER:-huggingface}
+  LLM: ${HF_MODEL:-$(env_value "$AI_ENV_FILE" HF_MODEL)}
+  ASR: ${HF_ASR_MODEL:-$(env_value "$AI_ENV_FILE" HF_ASR_MODEL)}
   Token: ${HF_STATUS}
 
 Host nginx:  ${NGINX_STATUS}
   → http://127.0.0.1:${AIT_HTTP_PORT}${APP_BASE_PATH}/
 
 SQLite DB and artifacts: Docker volume demo-data
-No local model downloads — ASR + LLM call Hugging Face at runtime.
+AI config: config/ai.env (cloud HF by default; switch to Ollama post-deploy — see docs/VM-RUNBOOK.md).
 EOF
 
 if [[ "${RUN_SMOKE}" -eq 1 ]] && [[ -x "${ROOT}/scripts/smoke.sh" ]]; then

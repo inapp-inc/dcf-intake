@@ -15,6 +15,7 @@ import type {
   ScreeningScreenInItem,
   SectionId,
   SystemHealth,
+  LiveSessionStatus,
   TranscriptSegment,
   RiskFramework,
   TriageConfig,
@@ -31,6 +32,7 @@ export { wsBaseUrl, wsCaseUrl };
 export { ApiError } from "./errors";
 
 function timeoutForRequest(path: string, method: string): number {
+  if (method === "POST" && path.includes("/live/chunks")) return TIMEOUT_MS.liveChunk;
   if (method === "POST" && (/\/audio$/.test(path) || path.includes("/field-memo/audio"))) return TIMEOUT_MS.upload;
   if (method === "POST" && path.includes("/assistant-messages")) return TIMEOUT_MS.ai;
   if (method === "POST" && path.includes("/report51b/")) return TIMEOUT_MS.ai;
@@ -99,6 +101,23 @@ export const api = {
     return authRequest<{ items: CaseSummary[] }>(`/cases${q}`);
   },
 
+  searchCases(query: string) {
+    return authRequest<{ items: import("./types").CaseSearchResult[] }>(
+      `/cases/search?q=${encodeURIComponent(query)}`,
+    );
+  },
+
+  getRelatedCases(caseId: string) {
+    return authRequest<{ items: import("./types").RelatedCaseSummary[] }>(`/cases/${caseId}/related`);
+  },
+
+  demoReset(confirm = "RESET" as const, seedDemoCases = true) {
+    return authRequest<{ ok: boolean; casesRemoved: number; seededCases: number }>("/admin/demo-reset", {
+      method: "POST",
+      body: JSON.stringify({ confirm, seedDemoCases }),
+    });
+  },
+
   createCase(emergencyHint = false) {
     return authRequest<CaseSummary & { externalId?: string }>("/cases", {
       method: "POST",
@@ -116,6 +135,40 @@ export const api = {
     return authRequest<PipelineStatus>(`/cases/${caseId}/audio`, {
       method: "POST",
       body: fd,
+    });
+  },
+
+  getLiveStatus(caseId: string) {
+    return authRequest<LiveSessionStatus>(`/cases/${caseId}/live/status`);
+  },
+
+  startLiveSession(caseId: string) {
+    return authRequest<LiveSessionStatus & PipelineStatus>(`/cases/${caseId}/live/start`, {
+      method: "POST",
+      body: "{}",
+    });
+  },
+
+  uploadLiveChunk(
+    caseId: string,
+    file: Blob,
+    meta: { sessionId: string; chunkIndex: number; durationMs: number },
+  ) {
+    const fd = new FormData();
+    fd.append("file", file, `chunk-${meta.chunkIndex}.webm`);
+    fd.append("sessionId", meta.sessionId);
+    fd.append("chunkIndex", String(meta.chunkIndex));
+    fd.append("durationMs", String(meta.durationMs));
+    return authRequest<{ ok: boolean; chunkIndex: number }>(`/cases/${caseId}/live/chunks`, {
+      method: "POST",
+      body: fd,
+    });
+  },
+
+  endLiveSession(caseId: string) {
+    return authRequest<{ ok: boolean; status: string; message?: string }>(`/cases/${caseId}/live/end`, {
+      method: "POST",
+      body: "{}",
     });
   },
 

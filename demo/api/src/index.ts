@@ -19,8 +19,10 @@ async function main() {
   server.headersTimeout = 3_700_000;
   server.keepAliveTimeout = 3_700_000;
   attachCaseWebSocket(server);
-  server.listen(config.port, () => {
-    console.log(`Child welfare intake demo API listening on :${config.port} (SQLite, WS /ws/cases/:caseId)`);
+  server.listen(config.port, config.host, () => {
+    console.log(
+      `Child welfare intake demo API listening on ${config.host}:${config.port} (SQLite, WS /ws/cases/:caseId)`,
+    );
   });
 }
 

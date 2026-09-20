@@ -24,7 +24,7 @@ const upload = multer({
 
 const router = Router();
 
-router.get("/cases/:caseId/briefing", requireRoles("worker", "supervisor"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/briefing", requireRoles("worker", "supervisor"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const briefing = await getOrCreateBriefing(caseId);
@@ -62,7 +62,7 @@ const notesSchema = z.object({
   voiceMemoObjectKey: z.string().optional(),
 });
 
-router.get("/cases/:caseId/field-notes", requireRoles("worker", "supervisor"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/field-notes", requireRoles("worker", "supervisor"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     res.json(await getFieldNotes(caseId));
@@ -174,7 +174,7 @@ router.post("/cases/:caseId/report51b/draft", requireRoles("worker"), requireCas
   }
 });
 
-router.get("/cases/:caseId/report51b/draft", requireRoles("worker", "supervisor"), requireCaseAccess(), async (req, res, next) => {
+router.get("/cases/:caseId/report51b/draft", requireRoles("worker", "supervisor"), requireCaseAccess("caseId", "read"), async (req, res, next) => {
   try {
     const caseId = paramId(req, "caseId");
     const draft = await getLatestDraft(caseId);

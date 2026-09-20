@@ -8,12 +8,17 @@ from . import config
 logger = logging.getLogger(__name__)
 
 
-def merge_nlp_fields(case_id: str, fields: list[dict[str, Any]]) -> None:
+def merge_nlp_fields(
+    case_id: str,
+    fields: list[dict[str, Any]],
+    *,
+    incremental: bool = False,
+) -> None:
     url = f"{config.API_BASE_URL}/internal/cases/{case_id}/nlp-merge"
     with httpx.Client(timeout=60.0) as client:
         r = client.post(
             url,
-            json={"fields": fields},
+            json={"fields": fields, "incremental": incremental},
             headers={"X-Internal-Key": config.INTERNAL_API_KEY},
         )
         if r.status_code >= 400:

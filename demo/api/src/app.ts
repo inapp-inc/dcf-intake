@@ -18,6 +18,7 @@ import screeningRouter from "./routes/screening.js";
 import investigationRouter from "./routes/investigation.js";
 import auditRouter from "./routes/audit.js";
 import adminRouter from "./routes/admin.js";
+import liveRouter from "./routes/live.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OFFICIAL_FORM_JS = readFileSync(join(__dirname, "../public/initial-report-form.js"), "utf8");
@@ -62,6 +63,7 @@ export function createApp() {
   protectedApi.use(casesRouter);
   protectedApi.use(form51aRouter);
   protectedApi.use(intakeRouter);
+  protectedApi.use(liveRouter);
   protectedApi.use(screeningRouter);
   protectedApi.use(investigationRouter);
   protectedApi.use(auditRouter);

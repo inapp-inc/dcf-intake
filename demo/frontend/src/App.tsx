@@ -96,7 +96,17 @@ function AuthenticatedApp() {
         onLogout={handleLogout}
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <AppHeader role={role} page={page} />
+        <AppHeader
+          role={role}
+          page={page}
+          onSearchOpenCase={(id, status) => {
+            if (role === "screener" && status === "in_progress") {
+              handleNav("intake", id);
+            } else {
+              handleNav("case-record", id);
+            }
+          }}
+        />
         <div style={{ flex: 1, overflow: "auto", padding: "18px 20px", background: "#F7F9FC" }}>
           {!pageAllowed ? (
             <EmptyStateCard

@@ -12,6 +12,8 @@ import {
 } from "../services/triageConfigService.js";
 import { DEFAULT_RISK_FRAMEWORK } from "../domain/risk/framework.js";
 import { getRiskFramework, saveRiskFramework } from "../services/riskFrameworkService.js";
+import { resetDemoData } from "../services/demoResetService.js";
+import { writeAudit } from "../services/auditService.js";
 
 const router = Router();
 
@@ -105,6 +107,29 @@ router.put("/admin/risk-framework", requireRoles("admin"), async (req, res, next
   try {
     const config = await saveRiskFramework(req.body);
     res.json({ config });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/admin/demo-reset", requireRoles("admin"), async (req, res, next) => {
+  try {
+    if (req.body?.confirm !== "RESET") {
+      res.status(400).json({
+        code: "BAD_REQUEST",
+        message: 'Body must include { "confirm": "RESET" }',
+      });
+      return;
+    }
+    const seedDemoCases = req.body?.seedDemoCases !== false;
+    const result = await resetDemoData({ seedDemoCases });
+    await writeAudit({
+      actorId: req.user!.userId,
+      actorRole: req.user!.role,
+      eventType: "demo.reset",
+      payload: result,
+    });
+    res.json({ ok: true, ...result });
   } catch (e) {
     next(e);
   }

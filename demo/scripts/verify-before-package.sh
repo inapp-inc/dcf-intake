@@ -63,14 +63,15 @@ if [[ "${missing}" -ne 0 ]]; then
   exit 1
 fi
 
-echo "==> Env file (HF token required for packaging)…"
+echo "==> Env files (.env + config/ai.env)…"
 if [[ ! -f "${DEMO_DIR}/.env" ]]; then
-  echo "MISSING: demo/.env — copy .env.example and set HF_API_TOKEN" >&2
+  echo "MISSING: demo/.env — copy .env.example" >&2
   exit 1
 fi
 # shellcheck disable=SC1091
 source "${DEMO_DIR}/scripts/lib/env-helpers.sh"
-if ! validate_hf_env "${DEMO_DIR}/.env"; then
+ensure_ai_env_file "${DEMO_DIR}"
+if ! validate_ai_env "${DEMO_DIR}/config/ai.env"; then
   exit 1
 fi
 

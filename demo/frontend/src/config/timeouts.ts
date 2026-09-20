@@ -3,6 +3,7 @@ export const TIMEOUT_MS = {
   auth: 30_000,
   default: 120_000,
   upload: 600_000,
+  liveChunk: 120_000,
   ai: 600_000,
 } as const;
 

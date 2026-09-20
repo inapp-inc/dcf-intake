@@ -16,11 +16,13 @@ export function IntakeProgressTracker({
   pipeline,
   hasTranscript,
   hasAudio,
+  liveActive = false,
 }: {
   form: Form51A | null;
   pipeline: PipelineStatus | null;
   hasTranscript: boolean;
   hasAudio: boolean;
+  liveActive?: boolean;
 }) {
   const stages = pipeline?.stages ?? {};
   const completion = form?.completion;
@@ -28,15 +30,39 @@ export function IntakeProgressTracker({
   const steps: { id: string; label: string; detail: string; state: StepState }[] = [
     {
       id: "audio",
-      label: "Call recording",
-      detail: hasAudio ? "Audio uploaded" : "Upload audio to begin",
-      state: hasAudio ? "done" : "pending",
+      label: liveActive ? "Live demo call" : "Call recording",
+      detail: liveActive
+        ? stageState(stages.live_transcription) === "active"
+          ? "Live session in progress"
+          : "Live session ended"
+        : hasAudio
+          ? "Audio uploaded"
+          : "Upload audio or start live demo",
+      state: liveActive
+        ? stageState(stages.live_transcription) === "done"
+          ? "done"
+          : "active"
+        : hasAudio
+          ? "done"
+          : "pending",
     },
     {
       id: "transcription",
       label: "Transcription",
-      detail: hasTranscript ? "Transcript available" : stageState(stages.transcription) === "active" ? "Transcribing…" : "Waiting for audio",
-      state: hasTranscript ? "done" : stageState(stages.transcription),
+      detail: liveActive
+        ? hasTranscript
+          ? "Live transcript stitching"
+          : "Waiting for speech…"
+        : hasTranscript
+          ? "Transcript available"
+          : stageState(stages.transcription) === "active"
+            ? "Transcribing…"
+            : "Waiting for audio",
+      state: hasTranscript
+        ? liveActive && stageState(stages.live_transcription) === "active"
+          ? "active"
+          : "done"
+        : stageState(stages.transcription),
     },
     {
       id: "nlp",

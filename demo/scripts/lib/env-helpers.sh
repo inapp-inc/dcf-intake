@@ -20,6 +20,7 @@ set_env_value() {
   local key="$2"
   local value="$3"
   local tmp="${file}.tmp"
+  mkdir -p "$(dirname "$file")"
   if [[ -f "$file" ]] && grep -qE "^${key}=" "$file"; then
     awk -v key="$key" -v value="$value" '
       BEGIN { replaced = 0 }
@@ -50,41 +51,100 @@ load_ai_defaults() {
   NLP_CONFIDENCE_THRESHOLD="${NLP_CONFIDENCE_THRESHOLD:-0.65}"
 }
 
+ensure_ai_env_file() {
+  local demo_root="$1"
+  local ai_env="${demo_root}/config/ai.env"
+  local ai_example="${demo_root}/config/ai.env.example"
+  local ai_defaults="${demo_root}/config/ai-defaults.env"
+
+  if [[ ! -f "$ai_env" ]]; then
+    if [[ -f "$ai_example" ]]; then
+      cp "$ai_example" "$ai_env"
+      echo "Created ${ai_env} from ai.env.example"
+    elif [[ -f "$ai_defaults" ]]; then
+      cp "$ai_defaults" "$ai_env"
+      echo "Created ${ai_env} from ai-defaults.env"
+    else
+      echo "ERROR: missing config/ai.env.example" >&2
+      return 1
+    fi
+  fi
+}
+
 apply_ai_env_defaults() {
-  local env_file="$1"
+  local ai_env_file="$1"
   local defaults_file="$2"
   load_ai_defaults "$defaults_file"
-  set_env_value "$env_file" "LLM_PROVIDER" "${LLM_PROVIDER:-huggingface}"
-  set_env_value "$env_file" "HF_MODEL" "${HF_MODEL:-meta-llama/Llama-3.1-8B-Instruct}"
-  set_env_value "$env_file" "HF_API_BASE" "${HF_API_BASE:-https://router.huggingface.co/v1}"
-  set_env_value "$env_file" "LLM_REQUEST_TIMEOUT_MS" "${LLM_REQUEST_TIMEOUT_MS:-600000}"
-  set_env_value "$env_file" "HF_ASR_MODEL" "${HF_ASR_MODEL:-openai/whisper-large-v3}"
-  set_env_value "$env_file" "HF_ASR_API_URL" "${HF_ASR_API_URL:-}"
-  set_env_value "$env_file" "ASR_REQUEST_TIMEOUT_MS" "${ASR_REQUEST_TIMEOUT_MS:-600000}"
-  set_env_value "$env_file" "NLP_CONFIDENCE_THRESHOLD" "${NLP_CONFIDENCE_THRESHOLD:-0.65}"
+  set_env_value "$ai_env_file" "LLM_PROVIDER" "${LLM_PROVIDER:-huggingface}"
+  set_env_value "$ai_env_file" "HF_MODEL" "${HF_MODEL:-meta-llama/Llama-3.1-8B-Instruct}"
+  set_env_value "$ai_env_file" "HF_API_BASE" "${HF_API_BASE:-https://router.huggingface.co/v1}"
+  set_env_value "$ai_env_file" "LLM_REQUEST_TIMEOUT_MS" "${LLM_REQUEST_TIMEOUT_MS:-600000}"
+  set_env_value "$ai_env_file" "HF_ASR_MODEL" "${HF_ASR_MODEL:-openai/whisper-large-v3}"
+  set_env_value "$ai_env_file" "HF_ASR_API_URL" "${HF_ASR_API_URL:-}"
+  set_env_value "$ai_env_file" "ASR_REQUEST_TIMEOUT_MS" "${ASR_REQUEST_TIMEOUT_MS:-600000}"
+  set_env_value "$ai_env_file" "OLLAMA_BASE_URL" "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+  set_env_value "$ai_env_file" "OLLAMA_MODEL" "${OLLAMA_MODEL:-llama3.2:3b}"
+  set_env_value "$ai_env_file" "NLP_CONFIDENCE_THRESHOLD" "${NLP_CONFIDENCE_THRESHOLD:-0.65}"
 }
 
 preserve_hf_token() {
-  local env_file="$1"
-  local token="${HF_API_TOKEN:-$(env_value "$env_file" HF_API_TOKEN)}"
+  local ai_env_file="$1"
+  local token="${HF_API_TOKEN:-$(env_value "$ai_env_file" HF_API_TOKEN)}"
   if [[ -n "$token" ]]; then
-    set_env_value "$env_file" "HF_API_TOKEN" "$token"
+    set_env_value "$ai_env_file" "HF_API_TOKEN" "$token"
     return 0
   fi
   return 1
 }
 
+validate_ai_env() {
+  local ai_env_file="$1"
+  local provider
+  provider="$(env_value "$ai_env_file" LLM_PROVIDER)"
+  provider="${provider:-huggingface}"
+
+  if [[ "$provider" == "huggingface" ]]; then
+    local token
+    token="$(env_value "$ai_env_file" HF_API_TOKEN)"
+    if [[ -z "$token" ]]; then
+      echo "WARN: HF_API_TOKEN is empty in ${ai_env_file} — cloud LLM and ASR will fail." >&2
+      return 1
+    fi
+    if [[ ! "$token" =~ ^hf_ ]]; then
+      echo "WARN: HF_API_TOKEN in ${ai_env_file} does not look like a Hugging Face token (expected hf_…)." >&2
+      return 1
+    fi
+    return 0
+  fi
+
+  if [[ "$provider" == "ollama" ]]; then
+    local base
+    base="$(env_value "$ai_env_file" OLLAMA_BASE_URL)"
+    if [[ -z "$base" ]]; then
+      echo "WARN: OLLAMA_BASE_URL is empty in ${ai_env_file} when LLM_PROVIDER=ollama." >&2
+      return 1
+    fi
+    echo "INFO: LLM_PROVIDER=ollama — ASR still uses Hugging Face unless HF_ASR_API_URL points elsewhere." >&2
+    return 0
+  fi
+
+  echo "WARN: Unknown LLM_PROVIDER=${provider} in ${ai_env_file}" >&2
+  return 1
+}
+
+# Back-compat alias
 validate_hf_env() {
-  local env_file="$1"
-  local token
-  token="$(env_value "$env_file" HF_API_TOKEN)"
-  if [[ -z "$token" ]]; then
-    echo "WARN: HF_API_TOKEN is empty in ${env_file} — transcription and LLM will fail." >&2
-    return 1
-  fi
-  if [[ ! "$token" =~ ^hf_ ]]; then
-    echo "WARN: HF_API_TOKEN in ${env_file} does not look like a Hugging Face token (expected hf_…)." >&2
-    return 1
-  fi
-  return 0
+  validate_ai_env "$@"
+}
+
+source_env_files() {
+  local demo_root="$1"
+  local env_file="${demo_root}/.env"
+  local ai_env="${demo_root}/config/ai.env"
+  set -a
+  # shellcheck disable=SC1090
+  [[ -f "$env_file" ]] && source "$env_file"
+  # shellcheck disable=SC1090
+  [[ -f "$ai_env" ]] && source "$ai_env"
+  set +a
 }

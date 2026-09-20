@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { api } from "../api/client";
 import { C } from "../theme/tokens";
 import { Chip, EmergBadge, RiskBadge } from "../components/atoms";
+import { LinkedCasesDrawer, RelatedCasesBanner } from "../components/cases/LinkedCasesDrawer";
 import { FormSection } from "../components/intake/FormSection";
 import { TranscriptPanel } from "../components/intake/TranscriptPanel";
 import { TriageSection } from "../components/intake/TriageSection";
@@ -11,7 +12,7 @@ import { BackButton } from "../components/ui/BackButton";
 import { LoadingBlock } from "../components/ui/LoadingSpinner";
 import { PageShell } from "../components/ui/PageShell";
 import { useApiQuery } from "../hooks/useApiQuery";
-import { formatCaseTitle, formatStatus } from "../utils/format";
+import { formatCaseName, formatCaseNumber, formatStatus } from "../utils/format";
 import type { SectionId, UserRole } from "../api/types";
 
 const SECTION_ORDER: SectionId[] = ["child", "incident", "reporter", "household", "filing"];
@@ -20,12 +21,15 @@ export function CaseRecordPage({
   caseId,
   role,
   onBack,
+  onOpenCase,
 }: {
   caseId: string;
   role: UserRole;
   onBack: () => void;
+  onOpenCase?: (caseId: string) => void;
 }) {
   const [openSec, setOpenSec] = useState<SectionId | null>("child");
+  const [relatedDrawerOpen, setRelatedDrawerOpen] = useState(false);
 
   const load = useCallback(async () => {
     const [caseMeta, form, transcript, flags, risk, bg, report] = await Promise.all([
@@ -56,6 +60,7 @@ export function CaseRecordPage({
   }
 
   const { caseMeta, form, transcript, flags, risk, bg, report } = data;
+  const relatedCases = caseMeta.relatedCases ?? [];
   const canOpen51a = role === "screener" || role === "supervisor" || role === "worker";
 
   return (
@@ -65,8 +70,15 @@ export function CaseRecordPage({
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: C.textLight, fontWeight: 600 }}>Full case record</div>
           <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Fraunces', serif", color: C.textDark }}>
-            {formatCaseTitle(caseMeta.externalId, caseId)} — {caseMeta.childDisplay ?? "Child"}
+            {formatCaseName(caseMeta.childDisplay)}
           </div>
+          {caseMeta.externalId && (
+            <span style={{ display: "inline-block", marginTop: 4 }}>
+              <Chip color={C.navy} bg={C.bg}>
+                Case #{formatCaseNumber(caseMeta.externalId)}
+              </Chip>
+            </span>
+          )}
         </div>
         <Chip color={C.navy} bg={C.bg}>
           {formatStatus(caseMeta.status)}
@@ -79,6 +91,8 @@ export function CaseRecordPage({
           </button>
         )}
       </div>
+
+      <RelatedCasesBanner count={relatedCases.length} onOpen={() => setRelatedDrawerOpen(true)} />
 
       <div className="card" style={{ padding: "15px 17px" }}>
         <div className="sec-title">Emergency triage flags</div>
@@ -145,6 +159,16 @@ export function CaseRecordPage({
           )}
         </div>
       )}
+
+      <LinkedCasesDrawer
+        open={relatedDrawerOpen}
+        relatedCases={relatedCases}
+        onClose={() => setRelatedDrawerOpen(false)}
+        onOpenCase={(id) => {
+          setRelatedDrawerOpen(false);
+          if (onOpenCase) onOpenCase(id);
+        }}
+      />
     </PageShell>
   );
 }

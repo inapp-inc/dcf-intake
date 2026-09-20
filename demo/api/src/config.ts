@@ -1,5 +1,6 @@
 export const config = {
-  port: parseInt(process.env.PORT ?? "8080", 10),
+  host: process.env.HOST ?? "0.0.0.0",
+  port: parseInt(process.env.PORT ?? "11110", 10),
   nodeEnv: process.env.NODE_ENV ?? "development",
   databaseUrl: process.env.DATABASE_URL ?? "sqlite:////data/ait.db",
   artifactDir: process.env.ARTIFACT_DIR ?? "/data/artifacts",
