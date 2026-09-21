@@ -14,6 +14,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ai-worker")
 
+# Stages that may run many times per case (never dedupe via pipeline stage status).
+_REPEATABLE_STAGES = frozenset({"live_chunk", "live_end"})
+
 
 def main() -> None:
     bus = RedisBus()
@@ -32,7 +35,11 @@ def main() -> None:
             if job_id is not None:
                 bus.complete_job(job_id)
             continue
-        if not payload.get("force") and db.should_skip_stage(case_id, _stage_key(stage)):
+        if (
+            stage not in _REPEATABLE_STAGES
+            and not payload.get("force")
+            and db.should_skip_stage(case_id, _stage_key(stage))
+        ):
             logger.info("Skipping duplicate stage %s for case %s", stage, case_id)
             if job_id is not None:
                 bus.complete_job(job_id)

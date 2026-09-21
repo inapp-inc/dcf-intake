@@ -289,6 +289,7 @@ def _transcribe_live_audio(
 
     run_incremental_nlp(case_id, bus, transcript)
     run_gap_coach(case_id, bus, transcript)
+    run_pending_fields_notice(case_id, bus)
     bus.publish_case_event(case_id, {"type": "live.snapshot", "chunkIndex": chunk_index})
     return True
 

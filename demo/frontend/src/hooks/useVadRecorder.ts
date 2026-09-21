@@ -8,6 +8,12 @@ const MIN_CHUNK_MS = 600;
 
 export type VadRecorderState = "idle" | "recording" | "error";
 
+function pickMimeType(): string {
+  return MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : "audio/webm";
+}
+
 export function useVadRecorder({
   enabled,
   onChunk,
@@ -26,9 +32,10 @@ export function useVadRecorder({
   const chunkBlobsRef = useRef<Blob[]>([]);
   const chunkIndexRef = useRef(0);
   const segmentStartRef = useRef<number | null>(null);
-  const lastFlushRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
+  const flushingRef = useRef(false);
   const enabledRef = useRef(enabled);
+  const mimeRef = useRef(pickMimeType());
 
   enabledRef.current = enabled;
 
@@ -46,29 +53,83 @@ export function useVadRecorder({
     analyserRef.current = null;
     chunkBlobsRef.current = [];
     segmentStartRef.current = null;
-    lastFlushRef.current = 0;
+    flushingRef.current = false;
     setLevel(0);
   }, []);
 
-  const flushChunk = useCallback(async () => {
-    const blobs = chunkBlobsRef.current;
+  const attachRecorder = useCallback((stream: MediaStream) => {
     chunkBlobsRef.current = [];
-    const segmentStart = segmentStartRef.current;
-    const now = performance.now();
-    segmentStartRef.current = now;
-    lastFlushRef.current = now;
+    const recorder = new MediaRecorder(stream, { mimeType: mimeRef.current });
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunkBlobsRef.current.push(e.data);
+    };
+    recorder.start(250);
+    recorderRef.current = recorder;
+    segmentStartRef.current = performance.now();
+  }, []);
 
-    if (!blobs.length) return;
-    const combined = new Blob(blobs, { type: blobs[0]?.type || "audio/webm" });
-    if (combined.size < 256) return;
+  const stopRecorderAndCollect = useCallback((): Promise<Blob | null> => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      const blobs = chunkBlobsRef.current;
+      chunkBlobsRef.current = [];
+      if (!blobs.length) return Promise.resolve(null);
+      return Promise.resolve(new Blob(blobs, { type: mimeRef.current }));
+    }
 
-    const durationMs = segmentStart
-      ? Math.max(MIN_CHUNK_MS, Math.round(now - segmentStart))
-      : FIRST_FLUSH_MS;
-    const index = chunkIndexRef.current;
-    chunkIndexRef.current += 1;
-    await onChunk(combined, { chunkIndex: index, durationMs });
-  }, [onChunk]);
+    return new Promise((resolve) => {
+      recorder.onstop = () => {
+        const blobs = chunkBlobsRef.current;
+        chunkBlobsRef.current = [];
+        recorderRef.current = null;
+        if (!blobs.length) {
+          resolve(null);
+          return;
+        }
+        resolve(new Blob(blobs, { type: mimeRef.current }));
+      };
+      try {
+        recorder.stop();
+      } catch {
+        recorderRef.current = null;
+        resolve(null);
+      }
+    });
+  }, []);
+
+  const flushChunk = useCallback(
+    async (force = false) => {
+      if (flushingRef.current) return;
+      const segmentStart = segmentStartRef.current ?? performance.now();
+      const elapsed = performance.now() - segmentStart;
+      const threshold = chunkIndexRef.current === 0 ? FIRST_FLUSH_MS : PERIODIC_FLUSH_MS;
+      if (!force && elapsed < threshold - 50) return;
+
+      flushingRef.current = true;
+      try {
+        const combined = await stopRecorderAndCollect();
+        if (!combined || combined.size < 256) {
+          if (enabledRef.current && streamRef.current) {
+            attachRecorder(streamRef.current);
+          }
+          return;
+        }
+
+        const durationMs = Math.max(MIN_CHUNK_MS, Math.round(elapsed));
+        const index = chunkIndexRef.current;
+        chunkIndexRef.current += 1;
+
+        if (enabledRef.current && streamRef.current) {
+          attachRecorder(streamRef.current);
+        }
+
+        await onChunk(combined, { chunkIndex: index, durationMs });
+      } finally {
+        flushingRef.current = false;
+      }
+    },
+    [attachRecorder, onChunk, stopRecorderAndCollect],
+  );
 
   const tick = useCallback(() => {
     const analyser = analyserRef.current;
@@ -87,15 +148,14 @@ export function useVadRecorder({
     const now = performance.now();
     const segmentStart = segmentStartRef.current ?? now;
     const elapsedSegment = now - segmentStart;
-    const elapsedSinceFlush = now - lastFlushRef.current;
+    const threshold = chunkIndexRef.current === 0 ? FIRST_FLUSH_MS : PERIODIC_FLUSH_MS;
 
-    if (chunkBlobsRef.current.length > 0) {
-      const firstScheduledFlush =
-        chunkIndexRef.current === 0 && elapsedSegment >= FIRST_FLUSH_MS;
-      const periodicFlush = elapsedSinceFlush >= PERIODIC_FLUSH_MS;
-      if (firstScheduledFlush || periodicFlush) {
-        void flushChunk();
-      }
+    if (
+      !flushingRef.current &&
+      recorderRef.current?.state === "recording" &&
+      elapsedSegment >= threshold
+    ) {
+      void flushChunk();
     }
 
     rafRef.current = requestAnimationFrame(tick);
@@ -104,6 +164,7 @@ export function useVadRecorder({
   const start = useCallback(async () => {
     setError(null);
     chunkIndexRef.current = 0;
+    mimeRef.current = pickMimeType();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -115,19 +176,7 @@ export function useVadRecorder({
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType: mime });
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunkBlobsRef.current.push(e.data);
-      };
-      recorder.start(100);
-      recorderRef.current = recorder;
-
-      const now = performance.now();
-      lastFlushRef.current = now;
-      segmentStartRef.current = now;
+      attachRecorder(stream);
 
       setState("recording");
       rafRef.current = requestAnimationFrame(tick);
@@ -136,12 +185,10 @@ export function useVadRecorder({
       setState("error");
       setError(e instanceof Error ? e.message : "Microphone access denied");
     }
-  }, [cleanup, tick]);
+  }, [attachRecorder, cleanup, tick]);
 
   const stop = useCallback(async () => {
-    if (chunkBlobsRef.current.length) {
-      await flushChunk();
-    }
+    await flushChunk(true);
     cleanup();
     setState("idle");
   }, [cleanup, flushChunk]);
@@ -155,4 +202,4 @@ export function useVadRecorder({
   useEffect(() => () => cleanup(), [cleanup]);
 
   return { state, level, error, start, stop };
-};
+}

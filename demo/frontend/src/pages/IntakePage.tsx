@@ -19,6 +19,7 @@ import { TriageSection } from "../components/intake/TriageSection";
 import { IntakeProgressTracker } from "../components/intake/IntakeProgressTracker";
 import { AIAssistant } from "../components/intake/AIAssistant";
 import { LinkedCasesDrawer, RelatedCasesBanner } from "../components/cases/LinkedCasesDrawer";
+import { CaseAudioReview } from "../components/supervisor/CaseAudioReview";
 import {
   formatCaseName,
   formatCaseNumber,
@@ -739,6 +740,15 @@ export function IntakePage({
             segments={transcript}
             live={liveState === "recording" || (txState === "processing" && liveState !== "idle")}
           />
+        </IntakeCollapsibleSection>
+
+        <IntakeCollapsibleSection
+          title="Intake audio"
+          subtitle="Recorded live segments and uploads — retained until supervisor screening"
+          icon="🔊"
+          defaultExpanded={liveState === "recording" || liveState === "complete" || txState !== "idle"}
+        >
+          <CaseAudioReview caseId={caseId} refreshKey={`${transcript.length}-${liveState}`} />
         </IntakeCollapsibleSection>
 
         <div style={{ display: "flex", gap: 14, alignItems: "center", padding: "0 2px" }}>

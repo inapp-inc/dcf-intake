@@ -4,7 +4,14 @@ import { C } from "../../theme/tokens";
 import type { CaseAudioArtifact } from "../../api/types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 
-export function CaseAudioReview({ caseId }: { caseId: string }) {
+export function CaseAudioReview({
+  caseId,
+  refreshKey,
+}: {
+  caseId: string;
+  /** Bump to reload artifacts (e.g. live chunk count or transcript length). */
+  refreshKey?: string | number;
+}) {
   const [artifacts, setArtifacts] = useState<CaseAudioArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +34,7 @@ export function CaseAudioReview({ caseId }: { caseId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [caseId]);
+  }, [caseId, refreshKey]);
 
   if (loading) {
     return (

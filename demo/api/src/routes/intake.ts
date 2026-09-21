@@ -391,7 +391,7 @@ router.get("/cases/:caseId/pipeline", requireRoles("screener", "supervisor", "wo
 
 router.get(
   "/cases/:caseId/audio/artifacts",
-  requireRoles("screener", "supervisor"),
+  requireRoles("screener", "supervisor", "worker"),
   requireCaseAccess("caseId", "read"),
   async (req, res, next) => {
     try {
@@ -421,7 +421,7 @@ router.get(
 
 router.get(
   "/cases/:caseId/audio/artifacts/:artifactId",
-  requireRoles("screener", "supervisor"),
+  requireRoles("screener", "supervisor", "worker"),
   requireCaseAccess("caseId", "read"),
   async (req, res, next) => {
     try {

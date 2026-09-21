@@ -9,6 +9,7 @@ import { TriageSection } from "../components/intake/TriageSection";
 import { RiskScoreCard } from "../components/intake/RiskScoreCard";
 import { BgChecks } from "../components/intake/BgChecks";
 import { BackButton } from "../components/ui/BackButton";
+import { CaseAudioReview } from "../components/supervisor/CaseAudioReview";
 import { LoadingBlock } from "../components/ui/LoadingSpinner";
 import { PageShell } from "../components/ui/PageShell";
 import { useApiQuery } from "../hooks/useApiQuery";
@@ -102,6 +103,11 @@ export function CaseRecordPage({
       <div className="card" style={{ padding: "15px 17px" }}>
         <div className="sec-title">Call transcript</div>
         <TranscriptPanel segments={transcript.segments} />
+      </div>
+
+      <div className="card" style={{ padding: "15px 17px" }}>
+        <div className="sec-title">Intake audio</div>
+        <CaseAudioReview caseId={caseId} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
