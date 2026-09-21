@@ -5,6 +5,8 @@ const FIRST_FLUSH_MS = 5_000;
 /** Maximum gap between uploads while recording continues. */
 const PERIODIC_FLUSH_MS = 15_000;
 const MIN_CHUNK_MS = 600;
+const MIN_CHUNK_BYTES = 256;
+const MIN_FORCE_CHUNK_BYTES = 32;
 
 export type VadRecorderState = "idle" | "recording" | "error";
 
@@ -34,6 +36,8 @@ export function useVadRecorder({
   const segmentStartRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const flushingRef = useRef(false);
+  const stoppingRef = useRef(false);
+  const stopPromiseRef = useRef<Promise<void> | null>(null);
   const enabledRef = useRef(enabled);
   const mimeRef = useRef(pickMimeType());
 
@@ -99,7 +103,16 @@ export function useVadRecorder({
 
   const flushChunk = useCallback(
     async (force = false) => {
-      if (flushingRef.current) return;
+      if (flushingRef.current) {
+        if (force) {
+          while (flushingRef.current) {
+            await new Promise((r) => setTimeout(r, 50));
+          }
+        } else {
+          return;
+        }
+      }
+
       const segmentStart = segmentStartRef.current ?? performance.now();
       const elapsed = performance.now() - segmentStart;
       const threshold = chunkIndexRef.current === 0 ? FIRST_FLUSH_MS : PERIODIC_FLUSH_MS;
@@ -108,8 +121,9 @@ export function useVadRecorder({
       flushingRef.current = true;
       try {
         const combined = await stopRecorderAndCollect();
-        if (!combined || combined.size < 256) {
-          if (enabledRef.current && streamRef.current) {
+        const minBytes = force ? MIN_FORCE_CHUNK_BYTES : MIN_CHUNK_BYTES;
+        if (!combined || combined.size < minBytes) {
+          if (enabledRef.current && !stoppingRef.current && streamRef.current) {
             attachRecorder(streamRef.current);
           }
           return;
@@ -119,7 +133,7 @@ export function useVadRecorder({
         const index = chunkIndexRef.current;
         chunkIndexRef.current += 1;
 
-        if (enabledRef.current && streamRef.current) {
+        if (enabledRef.current && !stoppingRef.current && streamRef.current) {
           attachRecorder(streamRef.current);
         }
 
@@ -133,7 +147,7 @@ export function useVadRecorder({
 
   const tick = useCallback(() => {
     const analyser = analyserRef.current;
-    if (!analyser || !enabledRef.current) return;
+    if (!analyser || !enabledRef.current || stoppingRef.current) return;
 
     const buf = new Uint8Array(analyser.fftSize);
     analyser.getByteTimeDomainData(buf);
@@ -164,6 +178,7 @@ export function useVadRecorder({
   const start = useCallback(async () => {
     setError(null);
     chunkIndexRef.current = 0;
+    stoppingRef.current = false;
     mimeRef.current = pickMimeType();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -188,18 +203,34 @@ export function useVadRecorder({
   }, [attachRecorder, cleanup, tick]);
 
   const stop = useCallback(async () => {
-    await flushChunk(true);
-    cleanup();
-    setState("idle");
+    if (stopPromiseRef.current) return stopPromiseRef.current;
+
+    stopPromiseRef.current = (async () => {
+      stoppingRef.current = true;
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      await flushChunk(true);
+      cleanup();
+      stoppingRef.current = false;
+      setState("idle");
+    })();
+
+    try {
+      await stopPromiseRef.current;
+    } finally {
+      stopPromiseRef.current = null;
+    }
   }, [cleanup, flushChunk]);
 
   useEffect(() => {
-    if (!enabled && state === "recording") {
+    if (!enabled && state === "recording" && !stoppingRef.current) {
       void stop();
     }
   }, [enabled, state, stop]);
 
   useEffect(() => () => cleanup(), [cleanup]);
 
-  return { state, level, error, start, stop };
+  return { state, level, error, start, stop, flushNow: () => flushChunk(true) };
 }

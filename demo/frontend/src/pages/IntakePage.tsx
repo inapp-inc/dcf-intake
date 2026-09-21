@@ -337,7 +337,7 @@ export function IntakePage({
     [caseId, refreshLiveSnapshot],
   );
 
-  const vadEnabled = liveState === "recording";
+  const vadEnabled = liveState === "recording" || liveState === "stopping";
   const { level, error: vadError, start: startMic, stop: stopMic } = useVadRecorder({
     enabled: vadEnabled,
     onChunk: handleLiveChunk,
@@ -469,11 +469,12 @@ export function IntakePage({
   };
 
   const handleLiveStop = async () => {
-    if (!caseId) return;
+    if (!caseId || liveState !== "recording") return;
     setLiveState("stopping");
+    setLiveError(null);
     try {
       await stopMic();
-      const deadline = Date.now() + 20_000;
+      const deadline = Date.now() + 30_000;
       while (pendingLiveChunksRef.current > 0 && Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, 150));
       }

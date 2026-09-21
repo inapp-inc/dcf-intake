@@ -177,7 +177,7 @@ export const api = {
     return authRequest<{ artifacts: CaseAudioArtifact[] }>(`/cases/${caseId}/audio/artifacts`);
   },
 
-  async fetchCaseAudioBlobUrl(caseId: string, artifactId: string): Promise<string> {
+  async fetchCaseAudioBlob(caseId: string, artifactId: string): Promise<Blob> {
     const token = getAccessToken();
     if (!token) throw new ApiError("Not authenticated", 401, "AUTH_REQUIRED");
     const res = await fetchTimed(
@@ -189,7 +189,11 @@ export const api = {
       await parseJsonResponse(res);
       throw new ApiError("Audio playback failed", res.status);
     }
-    const blob = await res.blob();
+    return res.blob();
+  },
+
+  async fetchCaseAudioBlobUrl(caseId: string, artifactId: string): Promise<string> {
+    const blob = await api.fetchCaseAudioBlob(caseId, artifactId);
     return URL.createObjectURL(blob);
   },
 

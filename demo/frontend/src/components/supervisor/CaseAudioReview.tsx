@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import { C } from "../../theme/tokens";
 import type { CaseAudioArtifact } from "../../api/types";
+import { stitchAudioBlobs } from "../../utils/stitchAudio";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 export function CaseAudioReview({
@@ -36,6 +37,8 @@ export function CaseAudioReview({
     };
   }, [caseId, refreshKey]);
 
+  const playbackGroups = useMemo(() => groupArtifactsForPlayback(artifacts), [artifacts]);
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.textLight }}>
@@ -62,38 +65,104 @@ export function CaseAudioReview({
       <p style={{ fontSize: 11, color: C.textLight, margin: 0 }}>
         Intake audio is retained until you approve, screen out, or request clarification.
       </p>
-      {artifacts.map((a) => (
-        <CaseAudioPlayer key={a.id} caseId={caseId} artifact={a} />
+      {playbackGroups.map((group) => (
+        <StitchedAudioPlayer
+          key={group.key}
+          caseId={caseId}
+          artifacts={group.artifacts}
+          label={group.label}
+          refreshKey={refreshKey}
+        />
       ))}
     </div>
   );
 }
 
-function CaseAudioPlayer({ caseId, artifact }: { caseId: string; artifact: CaseAudioArtifact }) {
+type PlaybackGroup = {
+  key: string;
+  label: string;
+  artifacts: CaseAudioArtifact[];
+};
+
+function groupArtifactsForPlayback(artifacts: CaseAudioArtifact[]): PlaybackGroup[] {
+  const live = artifacts
+    .filter((a) => a.source === "live")
+    .sort((a, b) => (a.chunkIndex ?? 0) - (b.chunkIndex ?? 0) || a.createdAt.localeCompare(b.createdAt));
+
+  const uploads = artifacts.filter((a) => a.source === "upload");
+
+  const groups: PlaybackGroup[] = [];
+  const bySession = new Map<string, CaseAudioArtifact[]>();
+  for (const item of live) {
+    const sid = item.sessionId ?? "live";
+    const list = bySession.get(sid) ?? [];
+    list.push(item);
+    bySession.set(sid, list);
+  }
+
+  for (const [sessionId, items] of bySession) {
+    groups.push({
+      key: `live-${sessionId}`,
+      label: items.length > 1 ? "Full live call recording" : "Live call recording",
+      artifacts: items,
+    });
+  }
+
+  for (const item of uploads) {
+    groups.push({
+      key: `upload-${item.id}`,
+      label: item.label || "Uploaded recording",
+      artifacts: [item],
+    });
+  }
+
+  return groups;
+}
+
+function StitchedAudioPlayer({
+  caseId,
+  artifacts,
+  label,
+  refreshKey,
+}: {
+  caseId: string;
+  artifacts: CaseAudioArtifact[];
+  label: string;
+  refreshKey?: string | number;
+}) {
   const [src, setSrc] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const artifactKey = artifacts.map((a) => a.id).join(",");
+
+  const pendingTranscription = artifacts.some((a) => !a.transcribed);
 
   useEffect(() => {
     let objectUrl: string | null = null;
     let cancelled = false;
-    void api
-      .fetchCaseAudioBlobUrl(caseId, artifact.id)
-      .then((url) => {
-        if (cancelled) {
-          URL.revokeObjectURL(url);
-          return;
+    setSrc(null);
+    setLoadError(null);
+
+    void (async () => {
+      try {
+        const blobs = await Promise.all(
+          artifacts.map((artifact) => api.fetchCaseAudioBlob(caseId, artifact.id)),
+        );
+        const stitched = await stitchAudioBlobs(blobs);
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(stitched);
+        setSrc(objectUrl);
+      } catch (e) {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : "Playback unavailable");
         }
-        objectUrl = url;
-        setSrc(url);
-      })
-      .catch((e) => {
-        if (!cancelled) setLoadError(e instanceof Error ? e.message : "Playback unavailable");
-      });
+      }
+    })();
+
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [caseId, artifact.id]);
+  }, [caseId, artifactKey, refreshKey]);
 
   return (
     <div
@@ -105,9 +174,12 @@ function CaseAudioPlayer({ caseId, artifact }: { caseId: string; artifact: CaseA
       }}
     >
       <div style={{ fontSize: 11, fontWeight: 600, color: C.textMid, marginBottom: 6 }}>
-        {artifact.label}
-        {!artifact.transcribed ? (
-          <span style={{ color: C.amber, fontWeight: 500 }}> · not transcribed</span>
+        {label}
+        {artifacts.length > 1 ? (
+          <span style={{ color: C.textLight, fontWeight: 500 }}> · {artifacts.length} segments stitched</span>
+        ) : null}
+        {pendingTranscription ? (
+          <span style={{ color: C.amber, fontWeight: 500 }}> · transcription in progress</span>
         ) : null}
       </div>
       {loadError ? (
@@ -117,7 +189,7 @@ function CaseAudioPlayer({ caseId, artifact }: { caseId: string; artifact: CaseA
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.textLight }}>
           <LoadingSpinner size={12} />
-          Preparing playback…
+          Stitching segments for playback…
         </div>
       )}
     </div>

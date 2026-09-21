@@ -73,7 +73,7 @@ export function LiveCallPanel({
               {state === "starting"
                 ? "Starting microphone…"
                 : state === "stopping"
-                  ? "Ending session…"
+                  ? "Uploading final audio and ending session…"
                   : "Listening — audio uploads every 5s, then every 15s"}
             </div>
           </div>
