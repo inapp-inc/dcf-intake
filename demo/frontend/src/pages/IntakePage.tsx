@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsyncAction } from "../hooks/useAsyncAction";
@@ -26,7 +26,7 @@ import {
   formatInitiatedTime,
 } from "../utils/format";
 import type { RelatedCaseSummary } from "../api/types";
-import { PIPELINE_POLL_MS } from "../config/timeouts";
+import { LIVE_POLL_MS, PIPELINE_POLL_MS } from "../config/timeouts";
 import { LoadingBlock, LoadingSpinner } from "../components/ui/LoadingSpinner";
 import type {
   AssistantMessage,
@@ -140,6 +140,15 @@ function firstMissingSection(form: Form51A): SectionId | null {
   return null;
 }
 
+function firstMissingFieldId(form: Form51A): string | undefined {
+  for (const sid of SECTION_ORDER) {
+    for (const [fieldId, f] of Object.entries(form.sections[sid].fields)) {
+      if (f.required && !f.value.trim()) return fieldId;
+    }
+  }
+  return undefined;
+}
+
 export function IntakePage({
   caseId,
   onCaseId,
@@ -185,29 +194,7 @@ export function IntakePage({
   );
   const aiRef = useRef<HTMLDivElement>(null);
   const patchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleLiveChunk = useCallback(
-    async (blob: Blob, meta: { chunkIndex: number; durationMs: number }) => {
-      if (!caseId || !liveSessionIdRef.current) return;
-      try {
-        await api.uploadLiveChunk(caseId, blob, {
-          sessionId: liveSessionIdRef.current,
-          chunkIndex: meta.chunkIndex,
-          durationMs: meta.durationMs,
-        });
-        setTxState("processing");
-      } catch (e) {
-        setLiveError(e instanceof ApiError ? e.message : "Failed to upload audio chunk");
-      }
-    },
-    [caseId],
-  );
-
-  const vadEnabled = liveState === "recording";
-  const { level, error: vadError, start: startMic, stop: stopMic } = useVadRecorder({
-    enabled: vadEnabled,
-    onChunk: handleLiveChunk,
-  });
+  const pendingLiveChunksRef = useRef(0);
 
   const refreshAll = useCallback(async (opts?: { silent?: boolean }) => {
     if (!isAuthenticated || !caseId) return;
@@ -275,6 +262,86 @@ export function IntakePage({
     }
   }, [isAuthenticated, caseId]);
 
+  const refreshAssistant = useCallback(async () => {
+    if (!isAuthenticated || !caseId) return;
+    const m = await api.getAssistantMessages(caseId).catch(() => []);
+    setMessages(m);
+    setTimeout(() => {
+      if (aiRef.current) aiRef.current.scrollTop = aiRef.current.scrollHeight;
+    }, 80);
+  }, [isAuthenticated, caseId]);
+
+  const refreshLiveSnapshot = useCallback(async () => {
+    if (!isAuthenticated || !caseId) return;
+    const [t, f, m, p] = await Promise.all([
+      api.getTranscript(caseId).catch(() => null),
+      api.getForm51a(caseId).catch(() => null),
+      api.getAssistantMessages(caseId).catch(() => []),
+      api.getPipeline(caseId).catch(() => null),
+    ]);
+    if (t?.segments?.length) {
+      setTranscript(t.segments);
+      setTxState((s) => (s === "idle" ? "processing" : s));
+    }
+    if (f) {
+      setForm((prev) => {
+        if (prev && f.checkpointStatus === "ai_populating") {
+          for (const sid of SECTION_ORDER) {
+            const newAi = Object.entries(f.sections[sid].fields).find(
+              ([fid, field]) =>
+                field.source === "ai" &&
+                field.value.trim() &&
+                (!prev.sections[sid].fields[fid]?.value.trim() ||
+                  prev.sections[sid].fields[fid]?.source !== "ai"),
+            );
+            if (newAi) {
+              setOpenSec(sid);
+              break;
+            }
+          }
+        }
+        return f;
+      });
+    }
+    setMessages(m);
+    if (p) {
+      setPipeline(p);
+      setTxState((prev) => syncTxStateFromPipeline(prev, p.stages));
+    }
+    setTimeout(() => {
+      if (aiRef.current) aiRef.current.scrollTop = aiRef.current.scrollHeight;
+    }, 80);
+  }, [isAuthenticated, caseId]);
+
+  const handleLiveChunk = useCallback(
+    async (blob: Blob, meta: { chunkIndex: number; durationMs: number }) => {
+      if (!caseId || !liveSessionIdRef.current) return;
+      pendingLiveChunksRef.current += 1;
+      try {
+        await api.uploadLiveChunk(caseId, blob, {
+          sessionId: liveSessionIdRef.current,
+          chunkIndex: meta.chunkIndex,
+          durationMs: meta.durationMs,
+        });
+        setTxState("processing");
+        void refreshLiveSnapshot();
+        window.setTimeout(() => void refreshLiveSnapshot(), 2500);
+        window.setTimeout(() => void refreshLiveSnapshot(), 6000);
+      } catch (e) {
+        setLiveError(e instanceof ApiError ? e.message : "Failed to upload audio chunk");
+      } finally {
+        pendingLiveChunksRef.current -= 1;
+      }
+    },
+    [caseId, refreshLiveSnapshot],
+  );
+
+  const vadEnabled = liveState === "recording";
+  const { level, error: vadError, start: startMic, stop: stopMic } = useVadRecorder({
+    enabled: vadEnabled,
+    onChunk: handleLiveChunk,
+  });
+
   useEffect(() => {
     if (!isAuthenticated) return;
     if (!caseId) {
@@ -288,6 +355,13 @@ export function IntakePage({
     }
     void refreshAll();
   }, [isAuthenticated, caseId, onCaseId, refreshAll]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !caseId || liveState !== "recording") return;
+    void refreshLiveSnapshot();
+    const id = setInterval(() => void refreshLiveSnapshot(), LIVE_POLL_MS);
+    return () => clearInterval(id);
+  }, [isAuthenticated, caseId, liveState, refreshLiveSnapshot]);
 
   useEffect(() => {
     if (!isAuthenticated || !caseId) return;
@@ -320,15 +394,6 @@ export function IntakePage({
     }
   }, [nlpReextracting, pipeline?.stages?.nlp]);
 
-  const refreshAssistant = useCallback(async () => {
-    if (!isAuthenticated || !caseId) return;
-    const m = await api.getAssistantMessages(caseId).catch(() => []);
-    setMessages(m);
-    setTimeout(() => {
-      if (aiRef.current) aiRef.current.scrollTop = aiRef.current.scrollHeight;
-    }, 80);
-  }, [isAuthenticated, caseId]);
-
   const onWsEvent = useCallback(
     (ev: CaseWsEvent) => {
       if (ev.type === "transcript.line" && ev.text) {
@@ -346,20 +411,24 @@ export function IntakePage({
           }
           return [...prev, next];
         });
+        window.setTimeout(() => void refreshLiveSnapshot(), 1200);
       }
       if (ev.type === "assistant.refresh") {
         void refreshAssistant();
+      }
+      if (ev.type === "live.snapshot") {
+        void refreshLiveSnapshot();
       }
       if (
         ev.type === "form.field.updated" ||
         ev.type === "form.checkpoint.changed" ||
         ev.type === "pipeline.stage"
       ) {
-        void refreshAll({ silent: true });
+        void refreshLiveSnapshot();
       }
       if (ev.type === "triage.alert") void refreshAll({ silent: true });
     },
-    [refreshAll, refreshAssistant],
+    [refreshAll, refreshAssistant, refreshLiveSnapshot],
   );
 
   useCaseWebSocket(caseId, onWsEvent);
@@ -403,6 +472,10 @@ export function IntakePage({
     setLiveState("stopping");
     try {
       await stopMic();
+      const deadline = Date.now() + 20_000;
+      while (pendingLiveChunksRef.current > 0 && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 150));
+      }
       await api.endLiveSession(caseId);
       setLiveState("complete");
       await refreshAll({ silent: true });
@@ -504,11 +577,33 @@ export function IntakePage({
   };
 
   const nlpStatus = pipeline?.stages?.nlp;
+  const liveFormBusy =
+    liveState === "recording" &&
+    (form?.checkpointStatus === "ai_populating" ||
+      pipeline?.stages?.nlp === "running" ||
+      pipeline?.stages?.live_transcription === "running");
   const nlpBusy =
     nlpReextracting ||
     nlpStatus === "running" ||
     nlpStatus === "pending" ||
-    pipeline?.stages?.clean === "running";
+    pipeline?.stages?.clean === "running" ||
+    liveFormBusy;
+
+  const assistantDisplayMessages = useMemo(() => {
+    if (!form) return messages;
+    const missing = listMissingRequired(form);
+    const liveActive = liveState === "recording" || liveState === "complete" || txState === "processing";
+    if (!missing.length || !liveActive) return messages;
+    if (messages.some((m) => m.message.startsWith("Pending required fields:"))) return messages;
+    const jump = firstMissingFieldId(form);
+    const summary = `Pending required fields: ${missing.slice(0, 8).join("; ")}${
+      missing.length > 8 ? ` (+${missing.length - 8} more)` : ""
+    }`;
+    return [
+      { id: "local-pending-required", type: "warning", message: summary, fieldJump: jump },
+      ...messages,
+    ];
+  }, [messages, form, liveState, txState]);
   const nlpFailed = nlpStatus === "failed";
   const canSubmit = form?.completion.canSubmitToSupervisor ?? false;
   const canComplete = form?.completion.canCompleteCheckpoint ?? false;
@@ -825,7 +920,7 @@ export function IntakePage({
         }}
       >
         <AIAssistant
-          messages={messages}
+          messages={assistantDisplayMessages}
           input={aiInput}
           setInput={setAiInput}
           onSend={() => void handleAiSend()}

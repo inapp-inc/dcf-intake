@@ -329,6 +329,7 @@ def run_transcribe(case_id: str, bus: RedisBus, payload: dict) -> None:
 
     db.save_transcript_segments(case_id, segments)
     minio_store.put_json(f"transcribe/output/{case_id}.json", {"segments": segments})
+    db.mark_audio_transcribed(case_id, audio_key)
 
     db.set_pipeline_stage(case_id, "transcription", "complete")
     bus.publish_case_event(case_id, {"type": "pipeline.stage", "stage": "transcription", "status": "complete"})

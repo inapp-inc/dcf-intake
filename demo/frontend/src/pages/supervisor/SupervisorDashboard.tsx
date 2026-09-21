@@ -10,6 +10,7 @@ import { useApiQuery } from "../../hooks/useApiQuery";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { formatCaseTitle, formatTimeAgo } from "../../utils/format";
 import type { ScreeningQueueItem } from "../../api/types";
+import { CaseAudioReview } from "../../components/supervisor/CaseAudioReview";
 
 const EMPTY_QUEUE: ScreeningQueueItem[] = [];
 
@@ -412,6 +413,21 @@ export function SupervisorDashboard({
                           </p>
                         </div>
                       </div>
+                    </div>
+                    <div style={{ marginTop: 13 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: C.textLight,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          marginBottom: 6,
+                        }}
+                      >
+                        Intake audio (review)
+                      </div>
+                      <CaseAudioReview caseId={c.caseId} />
                     </div>
                     <textarea
                       className="app-input app-ta"

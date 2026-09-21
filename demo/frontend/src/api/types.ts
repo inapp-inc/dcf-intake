@@ -222,6 +222,17 @@ export interface PipelineStatus {
   stages: Record<string, string>;
 }
 
+export interface CaseAudioArtifact {
+  id: string;
+  source: "live" | "upload";
+  sessionId?: string | null;
+  chunkIndex?: number | null;
+  byteSize: number;
+  transcribed: boolean;
+  createdAt: string;
+  label: string;
+}
+
 export interface FieldNotesResponse {
   text: string;
   fieldMemoStatus: string | null;
@@ -234,5 +245,6 @@ export type CaseWsEvent =
   | { type: "pipeline.stage"; stage?: string; status?: string }
   | { type: "triage.alert"; keywords?: string[]; flagId?: string }
   | { type: "assistant.refresh" }
+  | { type: "live.snapshot"; chunkIndex?: number }
   | { type: "field_memo.complete"; text?: string; appended?: string }
   | { type: "field_memo.failed"; message?: string };

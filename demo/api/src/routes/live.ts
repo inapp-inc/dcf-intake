@@ -6,6 +6,7 @@ import { requireRoles, paramId } from "../middleware/auth.js";
 import { requireCaseAccess } from "../middleware/caseAccess.js";
 import { writeAudit } from "../services/auditService.js";
 import { createMinioClient } from "../services/minioBootstrap.js";
+import { registerCaseAudioArtifact } from "../services/audioRetentionService.js";
 import { enqueuePipelineJob } from "../services/redisClient.js";
 
 const upload = multer({
@@ -112,7 +113,7 @@ router.post(
         [
           uuidv4(),
           caseId,
-          "Live demo call started. Speak naturally — transcription and form fill update every ~15 seconds or when you pause.",
+          "Live demo call started. Transcript, form fields, and pending required items will update in the sidebar every few seconds as audio is processed.",
         ],
       );
 
@@ -166,6 +167,14 @@ router.post(
       const key = `audio/live/${caseId}/${sessionId}/${String(chunkIndex).padStart(5, "0")}.webm`;
       const store = createMinioClient();
       await store.putObject(key, req.file.buffer, req.file.mimetype || "audio/webm");
+      await registerCaseAudioArtifact({
+        caseId,
+        audioKey: key,
+        source: "live",
+        sessionId,
+        chunkIndex,
+        byteSize: req.file.buffer.length,
+      });
 
       await enqueuePipelineJob(caseId, "live_chunk", {
         audioKey: key,

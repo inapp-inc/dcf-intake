@@ -36,6 +36,17 @@ def get_bytes(key: str) -> bytes:
     return _path(key).read_bytes()
 
 
+def list_live_session_chunk_keys(case_id: str, session_id: str) -> list[str]:
+    prefix = _root() / "audio" / "live" / case_id / session_id
+    if not prefix.is_dir():
+        return []
+    return sorted(
+        str(p.relative_to(_root()).as_posix())
+        for p in prefix.glob("*.webm")
+        if p.is_file()
+    )
+
+
 def find_latest_audio_key(case_id: str) -> str | None:
     prefix = _root() / "audio" / "input" / case_id
     if not prefix.is_dir():

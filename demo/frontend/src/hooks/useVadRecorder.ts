@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const SILENCE_MS = 800;
-const FORCE_FLUSH_MS = 15_000;
-const MIN_CHUNK_MS = 800;
-const SPEECH_THRESHOLD = 0.012;
-const SPEECH_START_MS = 200;
+/** First automatic upload after recording starts (no pause required). */
+const FIRST_FLUSH_MS = 5_000;
+/** Maximum gap between uploads while recording continues. */
+const PERIODIC_FLUSH_MS = 15_000;
+const MIN_CHUNK_MS = 600;
 
 export type VadRecorderState = "idle" | "recording" | "error";
 
@@ -25,10 +25,6 @@ export function useVadRecorder({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunkBlobsRef = useRef<Blob[]>([]);
   const chunkIndexRef = useRef(0);
-  const speakingRef = useRef(false);
-  const hadSpeechRef = useRef(false);
-  const speechStartRef = useRef<number | null>(null);
-  const silenceStartRef = useRef<number | null>(null);
   const segmentStartRef = useRef<number | null>(null);
   const lastFlushRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
@@ -49,10 +45,6 @@ export function useVadRecorder({
     audioCtxRef.current = null;
     analyserRef.current = null;
     chunkBlobsRef.current = [];
-    speakingRef.current = false;
-    hadSpeechRef.current = false;
-    speechStartRef.current = null;
-    silenceStartRef.current = null;
     segmentStartRef.current = null;
     lastFlushRef.current = 0;
     setLevel(0);
@@ -62,20 +54,17 @@ export function useVadRecorder({
     const blobs = chunkBlobsRef.current;
     chunkBlobsRef.current = [];
     const segmentStart = segmentStartRef.current;
-    segmentStartRef.current = performance.now();
-    lastFlushRef.current = performance.now();
-    speakingRef.current = false;
-    hadSpeechRef.current = false;
-    speechStartRef.current = null;
-    silenceStartRef.current = null;
+    const now = performance.now();
+    segmentStartRef.current = now;
+    lastFlushRef.current = now;
 
     if (!blobs.length) return;
     const combined = new Blob(blobs, { type: blobs[0]?.type || "audio/webm" });
-    if (combined.size < 512) return;
+    if (combined.size < 256) return;
 
     const durationMs = segmentStart
-      ? Math.max(MIN_CHUNK_MS, Math.round(performance.now() - segmentStart))
-      : FORCE_FLUSH_MS;
+      ? Math.max(MIN_CHUNK_MS, Math.round(now - segmentStart))
+      : FIRST_FLUSH_MS;
     const index = chunkIndexRef.current;
     chunkIndexRef.current += 1;
     await onChunk(combined, { chunkIndex: index, durationMs });
@@ -96,34 +85,17 @@ export function useVadRecorder({
     setLevel(Math.min(1, rms * 8));
 
     const now = performance.now();
-    const loud = rms >= SPEECH_THRESHOLD;
+    const segmentStart = segmentStartRef.current ?? now;
+    const elapsedSegment = now - segmentStart;
+    const elapsedSinceFlush = now - lastFlushRef.current;
 
-    if (loud) {
-      if (!speakingRef.current) {
-        if (speechStartRef.current == null) speechStartRef.current = now;
-        if (now - speechStartRef.current >= SPEECH_START_MS) {
-          speakingRef.current = true;
-          hadSpeechRef.current = true;
-          if (segmentStartRef.current == null) segmentStartRef.current = now;
-          silenceStartRef.current = null;
-        }
-      } else {
-        silenceStartRef.current = null;
-      }
-    } else if (speakingRef.current && hadSpeechRef.current) {
-      if (silenceStartRef.current == null) silenceStartRef.current = now;
-      else if (now - silenceStartRef.current >= SILENCE_MS) {
+    if (chunkBlobsRef.current.length > 0) {
+      const firstScheduledFlush =
+        chunkIndexRef.current === 0 && elapsedSegment >= FIRST_FLUSH_MS;
+      const periodicFlush = elapsedSinceFlush >= PERIODIC_FLUSH_MS;
+      if (firstScheduledFlush || periodicFlush) {
         void flushChunk();
       }
-    } else if (!speakingRef.current) {
-      speechStartRef.current = null;
-    }
-
-    if (
-      chunkBlobsRef.current.length > 0 &&
-      now - lastFlushRef.current >= FORCE_FLUSH_MS
-    ) {
-      void flushChunk();
     }
 
     rafRef.current = requestAnimationFrame(tick);

@@ -10,5 +10,8 @@ export const TIMEOUT_MS = {
 /** Poll case/pipeline while AI pipeline runs (ms). */
 export const PIPELINE_POLL_MS = 6_000;
 
+/** Faster poll during live demo call (transcript + form + assistant). */
+export const LIVE_POLL_MS = 3_500;
+
 export const TIMEOUT_MESSAGE =
   "Request timed out. The demo AI pipeline may still be running — wait a moment and refresh.";

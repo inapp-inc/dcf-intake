@@ -389,4 +389,68 @@ router.get("/cases/:caseId/pipeline", requireRoles("screener", "supervisor", "wo
   }
 });
 
+router.get(
+  "/cases/:caseId/audio/artifacts",
+  requireRoles("screener", "supervisor"),
+  requireCaseAccess("caseId", "read"),
+  async (req, res, next) => {
+    try {
+      const caseId = paramId(req, "caseId");
+      const { listCaseAudioArtifacts } = await import("../services/audioRetentionService.js");
+      const artifacts = await listCaseAudioArtifacts(caseId);
+      res.json({
+        artifacts: artifacts.map((a) => ({
+          id: a.id,
+          source: a.source,
+          sessionId: a.sessionId,
+          chunkIndex: a.chunkIndex,
+          byteSize: a.byteSize,
+          transcribed: a.transcribed,
+          createdAt: a.createdAt,
+          label:
+            a.source === "live"
+              ? `Live segment ${a.chunkIndex != null ? a.chunkIndex + 1 : ""}`.trim()
+              : "Uploaded recording",
+        })),
+      });
+    } catch (e) {
+      next(e);
+    }
+  },
+);
+
+router.get(
+  "/cases/:caseId/audio/artifacts/:artifactId",
+  requireRoles("screener", "supervisor"),
+  requireCaseAccess("caseId", "read"),
+  async (req, res, next) => {
+    try {
+      const caseId = paramId(req, "caseId");
+      const artifactId = paramId(req, "artifactId");
+      const { getCaseAudioArtifact, readArtifactBytes } = await import("../services/audioRetentionService.js");
+      const artifact = await getCaseAudioArtifact(caseId, artifactId);
+      if (!artifact) {
+        res.status(404).json({ code: "NOT_FOUND", message: "Audio artifact not found" });
+        return;
+      }
+      const bytes = readArtifactBytes(artifact.audioKey);
+      const ext = artifact.audioKey.split(".").pop()?.toLowerCase() ?? "webm";
+      const mime =
+        ext === "mp3" || ext === "mpeg"
+          ? "audio/mpeg"
+          : ext === "wav"
+            ? "audio/wav"
+            : ext === "m4a" || ext === "mp4"
+              ? "audio/mp4"
+              : "audio/webm";
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Content-Length", String(bytes.length));
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.send(bytes);
+    } catch (e) {
+      next(e);
+    }
+  },
+);
+
 export default router;

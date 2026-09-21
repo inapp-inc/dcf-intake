@@ -520,7 +520,13 @@ router.post(
 
       await store.putObject(key, req.file.buffer, req.file.mimetype || "application/octet-stream");
 
-
+      const { registerCaseAudioArtifact } = await import("../services/audioRetentionService.js");
+      await registerCaseAudioArtifact({
+        caseId,
+        audioKey: key,
+        source: "upload",
+        byteSize: req.file.buffer.length,
+      });
 
       await query(
 

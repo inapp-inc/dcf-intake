@@ -7,6 +7,7 @@ import { requireCaseAccess } from "../middleware/caseAccess.js";
 import { assertHumanAction } from "../services/policyEngine.js";
 import { writeAudit } from "../services/auditService.js";
 import * as formRepo from "../repositories/form51aRepository.js";
+import { releaseCaseAudio } from "../services/audioRetentionService.js";
 
 const router = Router();
 
@@ -200,6 +201,17 @@ router.post("/screening/:caseId/decision", requireRoles("supervisor"), requireCa
       eventType: "screening.decision",
       payload: { decision, responseType },
     });
+
+    const audioRemoved = await releaseCaseAudio(caseId);
+    if (audioRemoved > 0) {
+      await writeAudit({
+        caseId,
+        actorId: req.user!.userId,
+        actorRole: req.user!.role,
+        eventType: "audio.retention.released",
+        payload: { filesRemoved: audioRemoved },
+      });
+    }
 
     const form = await formRepo.loadForm51A(caseId);
     const { rows } = await query("SELECT * FROM cases WHERE id = $1", [caseId]);

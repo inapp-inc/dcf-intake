@@ -103,6 +103,77 @@ def get_live_session_status(case_id: str) -> str:
     return row["live_session_status"] if row else "idle"
 
 
+def get_live_session_id(case_id: str) -> str | None:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT live_session_id FROM cases WHERE id = ?",
+            (case_id,),
+        ).fetchone()
+    if not row or not row["live_session_id"]:
+        return None
+    return str(row["live_session_id"])
+
+
+def can_process_live_chunk(case_id: str, session_id: str | None) -> bool:
+    if not session_id:
+        return False
+    if session_id != get_live_session_id(case_id):
+        return False
+    return get_live_session_status(case_id) in ("recording", "ended")
+
+
+def count_pending_live_chunk_jobs(case_id: str) -> int:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT payload FROM pipeline_jobs
+            WHERE status IN ('pending', 'processing')
+            ORDER BY id ASC
+            """
+        ).fetchall()
+    count = 0
+    for row in rows:
+        try:
+            body = json.loads(row["payload"])
+        except json.JSONDecodeError:
+            continue
+        if body.get("caseId") == case_id and body.get("stage") == "live_chunk":
+            count += 1
+    return count
+
+
+def wait_for_pending_live_chunks(case_id: str, timeout_s: float = 60.0) -> None:
+    import time
+
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        if count_pending_live_chunk_jobs(case_id) == 0:
+            return
+        time.sleep(0.4)
+
+
+def list_untranscribed_live_artifacts(case_id: str, session_id: str) -> list[dict[str, Any]]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT audio_key, chunk_index, byte_size
+            FROM case_audio_artifacts
+            WHERE case_id = ? AND source = 'live' AND session_id = ? AND retained = 1 AND transcribed = 0
+            ORDER BY chunk_index ASC NULLS LAST, created_at ASC
+            """,
+            (case_id, session_id),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def mark_audio_transcribed(case_id: str, audio_key: str) -> None:
+    with connect() as conn:
+        conn.execute(
+            "UPDATE case_audio_artifacts SET transcribed = 1 WHERE case_id = ? AND audio_key = ?",
+            (case_id, audio_key),
+        )
+
+
 def append_transcript_segment(case_id: str, seg: dict[str, Any]) -> int:
     """Insert one transcript line; returns zero-based index for WS events."""
     with connect() as conn:
@@ -162,6 +233,21 @@ def get_form_field_snapshot(case_id: str) -> list[dict[str, Any]]:
             (case_id,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def last_assistant_message(case_id: str) -> dict[str, Any] | None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT msg_type, message, field_jump
+            FROM assistant_messages
+            WHERE case_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (case_id,),
+        ).fetchone()
+    return dict(row) if row else None
 
 
 def recent_coach_field_jumps(case_id: str, limit: int = 5) -> list[str]:

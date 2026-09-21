@@ -15,6 +15,7 @@ import type {
   ScreeningScreenInItem,
   SectionId,
   SystemHealth,
+  CaseAudioArtifact,
   LiveSessionStatus,
   TranscriptSegment,
   RiskFramework,
@@ -170,6 +171,26 @@ export const api = {
       method: "POST",
       body: "{}",
     });
+  },
+
+  getCaseAudioArtifacts(caseId: string) {
+    return authRequest<{ artifacts: CaseAudioArtifact[] }>(`/cases/${caseId}/audio/artifacts`);
+  },
+
+  async fetchCaseAudioBlobUrl(caseId: string, artifactId: string): Promise<string> {
+    const token = getAccessToken();
+    if (!token) throw new ApiError("Not authenticated", 401, "AUTH_REQUIRED");
+    const res = await fetchTimed(
+      `${API_BASE}/cases/${caseId}/audio/artifacts/${artifactId}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+      TIMEOUT_MS.upload,
+    );
+    if (!res.ok) {
+      await parseJsonResponse(res);
+      throw new ApiError("Audio playback failed", res.status);
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
   },
 
   getForm51a(caseId: string) {

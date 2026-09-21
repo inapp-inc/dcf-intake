@@ -87,7 +87,7 @@ Demo accounts (click **Demo credentials** on the login form to fill):
 Beside **Upload Call Recording**, the intake page includes **Live Demo Call** for simulating a hotline without telephony:
 
 1. Click **Start live demo call** and allow microphone access.
-2. Speak naturally; audio is sent every ~15 seconds (or sooner on a pause).
+2. Speak naturally; audio is sent after 5 seconds, then every 15 seconds (no pause required).
 3. Each chunk is transcribed via HF Whisper; lines appear with a **Live** label.
 4. Form 51A fields populate incrementally; the **AIT Assistant** suggests questions for missing required fields.
 5. Click **End live call** to run triage and risk scoring on the stitched transcript.

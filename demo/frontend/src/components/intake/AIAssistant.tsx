@@ -81,9 +81,10 @@ export function AIAssistant({
       >
         {messages.length === 0 && (
           <div style={{ textAlign: "center", paddingTop: 40, color: C.textLight, fontSize: 12 }}>
-            <div style={{ fontSize: 30, marginBottom: 10 }}>🎙</div>
-            Upload an audio file to begin. I'll analyze the call and guide you through the intake form, flagging
-            anything that needs attention.
+            <div style={{ fontSize: 30, marginBottom: 10 }}>{monitoring ? "📡" : "🎙"}</div>
+            {monitoring
+              ? "Live intake active — transcript lines, form fills, and pending required fields will appear here as audio is processed."
+              : "Upload an audio file or start a live demo call. I'll analyze the call and guide you through the intake form, flagging anything that needs attention."}
           </div>
         )}
         {sending && (

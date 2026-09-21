@@ -74,7 +74,7 @@ export function LiveCallPanel({
                 ? "Starting microphone…"
                 : state === "stopping"
                   ? "Ending session…"
-                  : "Listening — transcription runs every ~15s or on a natural pause"}
+                  : "Listening — audio uploads every 5s, then every 15s"}
             </div>
           </div>
           <Chip color={C.teal} bg={C.tealPale}>
@@ -121,7 +121,7 @@ export function LiveCallPanel({
       <div style={{ fontSize: 32, marginBottom: 10 }}>📡</div>
       <div style={{ fontSize: 14, fontWeight: 600, color: C.textDark, marginBottom: 4 }}>Live Demo Call</div>
       <div style={{ fontSize: 12, color: C.textLight, marginBottom: 16, lineHeight: 1.5 }}>
-        Simulate a hotline call with your microphone. Transcript and form fields update every ~15 seconds or when speech pauses.
+        Simulate a hotline call with your microphone. Transcript and form fields update on a fixed schedule (5s, then every 15s).
       </div>
       {error && (
         <div style={{ fontSize: 11, color: C.coral, marginBottom: 10 }}>{error}</div>

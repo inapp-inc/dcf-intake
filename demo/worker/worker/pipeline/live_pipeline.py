@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from typing import Any
 
 from .. import api_client, config, db, keywords, minio_store
@@ -105,6 +106,39 @@ def run_incremental_nlp(case_id: str, bus: RedisBus, transcript: str) -> int:
     return len(merge_fields)
 
 
+def run_pending_fields_notice(case_id: str, bus: RedisBus) -> None:
+    """Sidebar checklist of required fields still empty — updates when the list changes."""
+    fields = db.get_form_field_snapshot(case_id)
+    missing = [
+        r
+        for r in fields
+        if r.get("required") and not str(r.get("value") or "").strip()
+    ]
+    if not missing:
+        return
+
+    labels: list[str] = []
+    for section_id in SECTION_ORDER:
+        for row in missing:
+            if row.get("section_id") == section_id:
+                labels.append(str(row.get("label") or row.get("field_id")))
+    if not labels:
+        labels = [str(r.get("label") or r.get("field_id")) for r in missing]
+
+    shown = labels[:8]
+    summary = "Pending required fields: " + "; ".join(shown)
+    if len(labels) > len(shown):
+        summary += f" (+{len(labels) - len(shown)} more)"
+
+    last = db.last_assistant_message(case_id)
+    if last and last.get("message") == summary:
+        return
+
+    field_id = str(missing[0].get("field_id"))
+    db.add_assistant_message(case_id, "warning", summary, field_id)
+    bus.publish_case_event(case_id, {"type": "assistant.refresh"})
+
+
 def run_gap_coach(case_id: str, bus: RedisBus, transcript: str) -> None:
     fields = db.get_form_field_snapshot(case_id)
     missing = [
@@ -122,17 +156,21 @@ def run_gap_coach(case_id: str, bus: RedisBus, transcript: str) -> None:
         bus.publish_case_event(case_id, {"type": "assistant.refresh"})
         return
 
+    run_pending_fields_notice(case_id, bus)
+
     recent_jumps = set(db.recent_coach_field_jumps(case_id))
-    priority = missing[0]
+    candidates = [r for r in missing if str(r.get("field_id")) not in recent_jumps]
+    if not candidates:
+        candidates = missing
+
+    priority = candidates[0]
     for section_id in SECTION_ORDER:
-        match = next((r for r in missing if r.get("section_id") == section_id), None)
+        match = next((r for r in candidates if r.get("section_id") == section_id), None)
         if match:
             priority = match
             break
 
     field_id = str(priority.get("field_id"))
-    if field_id in recent_jumps:
-        return
 
     llm = LlmClient()
     system = (
@@ -185,17 +223,18 @@ def run_gap_coach(case_id: str, bus: RedisBus, transcript: str) -> None:
     bus.publish_case_event(case_id, {"type": "assistant.refresh"})
 
 
-def run_live_chunk(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None:
-    audio_key = payload.get("audioKey")
-    chunk_index = int(payload.get("chunkIndex") or 0)
-    duration_ms = int(payload.get("durationMs") or 0)
-    if not audio_key:
-        logger.warning("live_chunk missing audioKey for %s", case_id)
-        return
-
-    if db.get_live_session_status(case_id) != "recording":
-        logger.info("Skipping live_chunk — session not recording for %s", case_id)
-        return
+def _transcribe_live_audio(
+    case_id: str,
+    bus: RedisBus,
+    audio_key: str,
+    chunk_index: int,
+    duration_ms: int,
+    session_id: str | None,
+) -> bool:
+    """Transcribe one live chunk and append to transcript. Returns True when text was added."""
+    if session_id and not db.can_process_live_chunk(case_id, session_id):
+        logger.info("Skipping live_chunk — session mismatch or inactive for %s", case_id)
+        return False
 
     db.set_pipeline_stage(case_id, "live_transcription", "running")
     bus.publish_case_event(
@@ -203,6 +242,7 @@ def run_live_chunk(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None
         {"type": "pipeline.stage", "stage": "live_transcription", "status": "running"},
     )
 
+    audio_bytes = b""
     try:
         audio_bytes = minio_store.get_bytes(audio_key)
         ext = "." + audio_key.rsplit(".", 1)[-1] if "." in audio_key else ".webm"
@@ -211,15 +251,22 @@ def run_live_chunk(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None
     except AsrUnavailable as e:
         logger.error("live_chunk ASR failed for %s: %s", case_id, e)
         api_client.audit_model_unavailable(case_id, "live_transcription")
-        return
+        return False
     except Exception as e:
         logger.exception("live_chunk failed for %s: %s", case_id, e)
-        return
+        return False
 
     if not seg or not seg.get("text"):
-        return
+        logger.warning(
+            "live_chunk produced no text for %s (key=%s bytes=%s)",
+            case_id,
+            audio_key,
+            len(audio_bytes),
+        )
+        return False
 
     index = db.append_transcript_segment(case_id, seg)
+    db.mark_audio_transcribed(case_id, audio_key)
     bus.publish_case_event(
         case_id,
         {
@@ -242,10 +289,47 @@ def run_live_chunk(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None
 
     run_incremental_nlp(case_id, bus, transcript)
     run_gap_coach(case_id, bus, transcript)
+    bus.publish_case_event(case_id, {"type": "live.snapshot", "chunkIndex": chunk_index})
+    return True
+
+
+def reconcile_untranscribed_live_chunks(case_id: str, session_id: str, bus: RedisBus) -> int:
+    """Process any saved live audio not yet transcribed (handles end-of-call race)."""
+    processed = 0
+    pending = db.list_untranscribed_live_artifacts(case_id, session_id)
+    if not pending:
+        keys = minio_store.list_live_session_chunk_keys(case_id, session_id)
+        for i, key in enumerate(keys):
+            pending.append({"audio_key": key, "chunk_index": i, "byte_size": 0})
+
+    for row in pending:
+        audio_key = str(row["audio_key"])
+        chunk_index = int(row.get("chunk_index") or 0)
+        if _transcribe_live_audio(case_id, bus, audio_key, chunk_index, 3000, session_id):
+            processed += 1
+        time.sleep(0.2)
+    return processed
+
+
+def run_live_chunk(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None:
+    audio_key = payload.get("audioKey")
+    chunk_index = int(payload.get("chunkIndex") or 0)
+    duration_ms = int(payload.get("durationMs") or 0)
+    session_id = payload.get("sessionId")
+    if not audio_key:
+        logger.warning("live_chunk missing audioKey for %s", case_id)
+        return
+
+    _transcribe_live_audio(case_id, bus, str(audio_key), chunk_index, duration_ms, str(session_id) if session_id else None)
 
 
 def run_live_end(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None:
     from .stages import _maybe_clinical_review_flag, clean_transcript_text
+
+    session_id = payload.get("sessionId")
+    if session_id:
+        db.wait_for_pending_live_chunks(case_id, timeout_s=60.0)
+        reconcile_untranscribed_live_chunks(case_id, str(session_id), bus)
 
     segments = db.get_transcript_segments(case_id)
     transcript = live_transcript_text(segments)
@@ -253,7 +337,8 @@ def run_live_end(case_id: str, bus: RedisBus, payload: dict[str, Any]) -> None:
         db.add_assistant_message(
             case_id,
             "warning",
-            "Live session ended with no speech detected — enter Initial Report fields manually.",
+            "Live session ended with no speech detected — enter Initial Report fields manually. "
+            "Saved audio is retained for supervisor review until screening decision.",
             None,
         )
         bus.publish_case_event(case_id, {"type": "assistant.refresh"})
